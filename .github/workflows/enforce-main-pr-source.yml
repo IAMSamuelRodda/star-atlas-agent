@@ -1,0 +1,32 @@
+name: Enforce Main PR Source
+
+# Enforce that main branch only accepts PRs from dev branch
+# Part of three-tier branching strategy: feature/fix -> dev -> main
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR source branch
+        run: |
+          SOURCE_BRANCH="${{ github.head_ref }}"
+
+          if [ "$SOURCE_BRANCH" != "dev" ]; then
+            echo "ERROR: Pull requests to main must come from dev branch only"
+            echo "Current source: $SOURCE_BRANCH"
+            echo ""
+            echo "Workflow:"
+            echo "  1. Feature branches -> PR to dev"
+            echo "  2. Dev branch -> PR to main (staging to production)"
+            echo ""
+            echo "Please close this PR and merge to dev first."
+            exit 1
+          fi
+
+          echo "✓ PR source is dev branch - validation passed"
