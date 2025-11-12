@@ -1,0 +1,16 @@
+# docker-compose.yml 
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development # Use 'development' for dev, switch to 'production' as needed
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - .env
+    command: npm run dev

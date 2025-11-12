@@ -1,0 +1,56 @@
+# cloudbuild.yaml
+steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: Retrieve Secrets
+    entrypoint: 'bash'
+    args:
+    - '-c'
+    - |
+      echo "Retrieving secrets from Secret Manager..."
+      gcloud secrets versions access latest --secret="SECRET_GCP_SA_KEY" > env_vars/SECRET_GCP_SA_KEY
+      # Repeat the above command for each secret you need to retrieve
+      # Then, if necessary, generate an .env file or export these as environment variables
+      echo "Generating .env file from retrieved secrets..."
+      echo "SECRET_GCP_SA_KEY=$(cat env_vars/SECRET_GCP_SA_KEY)" >> .env
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '--no-cache'
+      - '-t'
+      - '$_AR_HOSTNAME/$PROJECT_ID/cloud-run-source-deploy/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+      - .
+      - '-f'
+      - Dockerfile
+    id: Build
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - '$_AR_HOSTNAME/$PROJECT_ID/cloud-run-source-deploy/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+    id: Push
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    args:
+      - run
+      - deploy
+      - $_SERVICE_NAME
+      - '--image=$_AR_HOSTNAME/$PROJECT_ID/cloud-run-source-deploy/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+      - '--region=$_DEPLOY_REGION'
+      - '--platform=managed'
+      - '--quiet'
+      - '--update-env-vars=VALUE_INPUT_OPTION=USER_ENTERED,SPREADSHEET_ID=1ReahH_DFlaJUnz4v3CczyqwR_IQklEZ-7oeyl6n6bIM,DOCKER_IMAGE=galactic-data-docker-image,GCP_PROJECT_NAME=galactic-data,GCP_PROJECT_ID=galactic-data,GCP_POOL_ID=galactic-data-pool-id-0,GCP_BUILD_DEPLOYMENT=cloud-build-deployer,GCP_WORKLOAD_IDENTIY_POOL_ID=cloud-build-pool,GCP_WORKLOAD_IDENTIY_PROVIDER_ID=cloud-build-provider,GCP_PROJECT_NUMBER=91737499175,GCP_REGION=australia-southeast1,GCP_ARTIFACT_REGISTRY_NAME=galactic-data-artifact-registry-0,GCP_SA_EMAIL=galactic-data@galactic-data.iam.gserviceaccount.com,GCP_SA_NAME=galactic-data-service-account,FIRESTORE_PROJECT_ID=default,FIRESTORE_CLIENT_EMAIL=service-91737499175@gcp-sa-firestore.iam.gserviceaccount.com,COINGECKO_API_URL_PUBLIC=https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd,TOKEN_ADDRESS_ATLAS=ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx,TOKEN_ADDRESS_POLIS=poLisWXnNRwC6oBu1vHiuKQzFjGL4XDSu4g9qjz9qVk,TOKEN_ADDRESS_PURI=CzLWmvjtj5bp9YEWkzzBnuWovVtogeuchFu5GeFh68hB,TOKEN_ADDRESS_BONK=DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263,TOKEN_ADDRESS_USDC=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v,TOKEN_ADDRESS_SOL_DEX=So11111111111111111111111111111111111111112,SA_GAME_ITEM_ADDRESS_SDU=SDUsgfSZaDhhZ76U3ZgvtFiXsfnHbf2VrzYxjBZ5YbM,GALACTIC_MARKETPLACE_PROGRAM_ID=traderDnaR5w6Tcoi3NFm53i48FTDNbGjBSZwWXDRrg,TOKEN_IDS=solana,star-atlas,star-atlas-dao,usd-coin,wrapped-solana,helium,bonk,raydium,orca,step-finance,render-token,jupiter-exchange-solana,SUPPRESS_WARNINGS=true,PORT=8080'
+    id: Deploy
+    entrypoint: gcloud
+images:
+  - '$_AR_HOSTNAME/$PROJECT_ID/cloud-run-source-deploy/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+options:
+  substitutionOption: ALLOW_LOOSE
+  logging: CLOUD_LOGGING_ONLY
+substitutions:
+  _SERVICE_NAME: galactic-data-service-0
+  _DEPLOY_REGION: australia-southeast1
+  _AR_HOSTNAME: australia-southeast1-docker.pkg.dev
+  _TRIGGER_ID: 114270a0-7680-4963-b30a-4878168375a0
+  _PLATFORM: managed
+tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-managed
+  - galactic-data-service-0

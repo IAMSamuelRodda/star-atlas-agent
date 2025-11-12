@@ -1,0 +1,32 @@
+{
+    "name": "Galactic Data Development",
+    "build": {
+      "dockerfile": "../Dockerfile",
+      "target": "development",
+      "context": "..",
+      "args": {
+        "TERRAFORM_VERSION": "1.1.7"
+      }
+    },
+    "settings": {
+      "terminal.integrated.shell.linux": "/bin/bash"
+    },
+    "extensions": [
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "ms-vscode.typescript-tslint-plugin",
+      "ms-azuretools.vscode-docker",
+      "googlecloudtools.cloudcode",
+      "hashicorp.terraform",
+      "GitHub.copilot"
+    ],
+    "forwardPorts": [
+      8080
+    ],
+    "remoteUser": "myappuser",
+    "postCreateCommand": "npm install",
+    "runArgs": [
+      "--env-file", "../.env"
+    ]
+  }
+  
