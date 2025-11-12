@@ -31,11 +31,12 @@
 - ✅ Initialized project structure (monorepo with pnpm workspaces)
 - ✅ Created comprehensive documentation (CLAUDE.md, README.md, ARCHITECTURE.md, STATUS.md, CONTRIBUTING.md, DEVELOPMENT.md, CHANGELOG.md)
 - ✅ Created BLUEPRINT.yaml with complete MVP roadmap (4 phases, 68 days estimated)
+- ✅ Researched Star Atlas APIs and resources (build.staratlas.com)
+- ✅ Researched Wingman AI architecture and voice interaction patterns
+- ✅ Identified key GitHub repositories (staratlasmeta/factory, ShipBit/wingman-ai)
 
 **In Progress:**
-- 🔵 Research Star Atlas resources and APIs
-- 🔵 Research Wingman AI architecture and patterns
-- 🔵 Define MVP feature scope
+- 🔵 Define MVP feature scope based on research findings
 
 **Next Up:**
 - [ ] Set up development environment (Node.js, pnpm, Firebase CLI)
@@ -82,6 +83,40 @@ No active issues (greenfield project).
 **Files Created:** 12
 **Files Modified:** 0
 **Test Coverage:** 0 tests (no code yet)
+
+### Star Atlas Research ✅
+**Completed:** 2025-11-12
+
+**Findings:**
+- **SAGE API**: NPM package `@staratlas/sage` (v1.8.10) for game mechanics
+  - Fleet management, crew, cargo, crafting, player profiles
+  - TypeScript bindings for Solana program accounts
+- **Galactic Marketplace API**: Trading protocol with order book
+  - GmOrderbookService for real-time order lists
+  - GmClientService for order data fetching
+- **Galaxy API**: Game world metadata (items, tokens, showroom)
+- **Repository**: github.com/staratlasmeta/factory for TypeScript SDK
+- **Documentation**: build.staratlas.com/dev-resources/apis-and-data
+
+### Wingman AI Research ✅
+**Completed:** 2025-11-12
+
+**Findings:**
+- **Architecture**: Python-based backend with REST/WebSocket API
+  - Standalone application running "on top of" games
+  - No direct game memory access (uses keystroke/mouse simulation)
+- **Voice Pipeline**: Whisper.cpp (STT) → AI models → ElevenLabs/xVASynth (TTS)
+- **AI Providers**: OpenAI, Azure, Groq, OpenRouter, local LLMs
+- **Command Types**: Traditional hotkeys, instant activation phrases, AI-driven actions
+- **Configuration**: File-based YAML with GUI editor
+- **Repository**: github.com/ShipBit/wingman-ai
+- **Star Citizen Integration**: StarHead API for trade routes and game data
+
+**Key Insights for Star Atlas Agent:**
+- Voice-first design with push-to-talk and wake word options
+- Modular skills system for extensibility
+- OpenAPI/Swagger REST API for client integration
+- Multi-wingman support (different personalities/contexts)
 
 ---
 
