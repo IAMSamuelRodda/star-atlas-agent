@@ -1,0 +1,43 @@
+// Placeholder Lambda handler for auth-service
+exports.handler = async (event) => {
+  const path = event.rawPath;
+  const method = event.requestContext.http.method;
+
+  // Send magic link endpoint
+  if (path === '/auth/magic-link' && method === 'POST') {
+    const body = JSON.parse(event.body || '{}');
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: 'Magic link placeholder - email sending not yet implemented',
+        email: body.email || 'No email provided',
+        note: 'Check your email for the login link (not actually sent in placeholder mode)',
+      }),
+    };
+  }
+
+  // Verify magic link endpoint
+  if (path === '/auth/verify' && method === 'POST') {
+    const body = JSON.parse(event.body || '{}');
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: 'Magic link verification placeholder',
+        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder',
+        user: {
+          userId: 'placeholder-user-id',
+          email: 'user@example.com',
+        },
+        note: 'This is a placeholder JWT token',
+      }),
+    };
+  }
+
+  return {
+    statusCode: 404,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ error: 'Not found', path }),
+  };
+};

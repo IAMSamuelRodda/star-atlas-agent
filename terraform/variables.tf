@@ -60,3 +60,11 @@ variable "additional_tags" {
   type        = map(string)
   default     = {}
 }
+
+# Authentication Configuration
+
+variable "jwt_secret" {
+  description = "Secret key for JWT token signing (store in AWS Secrets Manager for production)"
+  type        = string
+  sensitive   = true
+}

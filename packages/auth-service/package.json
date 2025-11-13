@@ -1,0 +1,32 @@
+{
+  "name": "@star-atlas-agent/auth-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Authentication service with magic link and JWT support",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "test": "vitest",
+    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules .turbo"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.470.0",
+    "@aws-sdk/client-ses": "^3.470.0",
+    "@aws-sdk/lib-dynamodb": "^3.470.0",
+    "jsonwebtoken": "^9.0.0",
+    "nanoid": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.0",
+    "@types/jsonwebtoken": "^9.0.0",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  }
+}
