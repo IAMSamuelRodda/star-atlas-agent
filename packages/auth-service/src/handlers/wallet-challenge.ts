@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { nanoid } from 'nanoid';
+import { logger } from '../utils/logger.js';
 
 const ddbClient = new DynamoDBClient({});
 const ddb = DynamoDBDocumentClient.from(ddbClient);
@@ -68,7 +69,11 @@ export async function createWalletChallenge(
       }),
     };
   } catch (error) {
-    console.error('Error creating wallet challenge:', error);
+    logger.error(
+      'Failed to create wallet challenge',
+      {},
+      error instanceof Error ? error : new Error(String(error))
+    );
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },

@@ -3,14 +3,17 @@
  * Outputs JSON-formatted logs for better querying and monitoring
  */
 
-export enum LogLevel {
+/* eslint-disable no-unused-vars */
+enum LogLevel {
   DEBUG = 'DEBUG',
   INFO = 'INFO',
   WARN = 'WARN',
   ERROR = 'ERROR',
 }
+/* eslint-enable no-unused-vars */
 
 interface LogContext {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 

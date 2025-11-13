@@ -32,7 +32,6 @@ export async function checkRateLimit(
   config: RateLimitConfig = DEFAULT_CONFIG
 ): Promise<{ allowed: boolean; retryAfter?: number }> {
   const now = Date.now();
-  const windowStart = now - (config.windowSeconds * 1000);
   const key = `ratelimit:${identifier}:${Math.floor(now / (config.windowSeconds * 1000))}`;
 
   try {

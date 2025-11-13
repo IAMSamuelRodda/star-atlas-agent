@@ -1,6 +1,7 @@
 import { APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { logger } from '../utils/logger.js';
 import type { AuthenticatedEvent } from '../middleware/auth.js';
 import type { User } from '../types.js';
 
@@ -42,6 +43,7 @@ export async function updateProfile(
     // Build update expression dynamically
     const updateExpressions: string[] = [];
     const expressionAttributeNames: Record<string, string> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const expressionAttributeValues: Record<string, any> = {};
 
     let valueCounter = 0;
@@ -126,7 +128,11 @@ export async function updateProfile(
       }),
     };
   } catch (error) {
-    console.error('Error updating profile:', error);
+    logger.error(
+      'Failed to update profile',
+      { userId: event.auth?.userId },
+      error instanceof Error ? error : new Error(String(error))
+    );
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },

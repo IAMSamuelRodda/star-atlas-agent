@@ -19,7 +19,6 @@ exports.handler = async (event) => {
 
   // Verify magic link endpoint
   if (path === '/auth/verify' && method === 'POST') {
-    const body = JSON.parse(event.body || '{}');
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },

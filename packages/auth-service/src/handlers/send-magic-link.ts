@@ -120,6 +120,7 @@ export async function sendMagicLink(
   } catch (error) {
     logger.error(
       'Failed to send magic link',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { email: (error as any).email },
       error instanceof Error ? error : new Error(String(error))
     );

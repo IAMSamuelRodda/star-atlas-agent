@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { verifyJWT } from '../utils/jwt.js';
+import { logger } from '../utils/logger.js';
 import type { AuthenticatedRequest } from '../types.js';
 
 export interface AuthenticatedEvent extends APIGatewayProxyEvent {
@@ -7,6 +8,7 @@ export interface AuthenticatedEvent extends APIGatewayProxyEvent {
 }
 
 export function authMiddleware(
+  // eslint-disable-next-line no-unused-vars
   handler: (event: AuthenticatedEvent) => Promise<APIGatewayProxyResult>
 ) {
   return async (event: AuthenticatedEvent): Promise<APIGatewayProxyResult> => {
@@ -53,7 +55,11 @@ export function authMiddleware(
       // Call the handler with authenticated event
       return await handler(event);
     } catch (error) {
-      console.error('Auth middleware error:', error);
+      logger.error(
+        'Auth middleware error',
+        {},
+        error instanceof Error ? error : new Error(String(error))
+      );
       return {
         statusCode: 500,
         headers: { 'Content-Type': 'application/json' },
