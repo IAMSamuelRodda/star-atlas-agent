@@ -57,13 +57,17 @@
   - Portable Agent Architecture: NFT-based ownership model, users own personality (sell/transfer)
 
 **In Progress:**
-- 🔧 Auth service improvements (PR #143)
-  - Schema migration (userId as primary key)
-  - Rate limiting middleware
-  - Structured logging
-  - Security hardening
+- 🔧 **PR #143**: Auth service improvements (awaiting CI)
+  - ✅ Schema migration (userId as primary key)
+  - ✅ Rate limiting middleware (DynamoDB-based)
+  - ✅ Structured logging (CloudWatch-ready)
+  - ✅ Email normalization (lowercase + trim)
+  - ✅ ESLint fixes (all packages pass locally)
+  - ⏳ CI checks running (some failures to investigate)
 
 **Recently Completed (2025-11-13):**
+
+**Session 1 (Morning)**:
 - ✅ Epic #1 - Foundation & Infrastructure (Issues #1-15)
   - Terraform AWS infrastructure
   - CI/CD pipeline with 5 workflows
@@ -74,13 +78,23 @@
   - User profile management (DynamoDB)
   - JWT utilities and auth middleware
 - ✅ Web app wallet connection components (partial)
+
+**Session 2 (Afternoon)**:
 - ✅ IDE crash recovery + codebase audit
-- 🚧 Auth service improvements (PR #143 - pending review)
+- ✅ Auth service refactoring (PR #143, 2 commits)
+  - Migrated Users table schema (email → userId primary key)
+  - Added rate limiting middleware (3 req/min)
+  - Implemented structured JSON logger
+  - Fixed email normalization across all handlers
+  - Removed placeholder emails for wallet-only users
+  - Fixed ESLint configuration (Node.js globals)
+  - Resolved all lint errors in auth-service (10 files)
 
 **Next Up:**
-- [ ] Add test coverage for auth-service
+- [ ] **Immediate**: Investigate PR #143 CI failures (build, test, dependency-audit)
+- [ ] Merge PR #143 once CI passes
+- [ ] Add unit tests for auth-service (follow-up PR)
 - [ ] Choose next epic: Memory Service, Agent Core, or MCP Server
-- [ ] Continue web-app frontend development
 
 ---
 
@@ -116,9 +130,14 @@ None
   4. Merge after review
 
 ### Medium Priority
+**PR #143 CI Failures** (2025-11-13):
+- **build**: Failure reason unknown (investigate logs)
+- **test**: Expected failure (no test files exist yet)
+- **dependency-audit**: Vulnerability or outdated deps (investigate logs)
+
 **Auth Service Issues** (Post-implementation review 2025-11-13, fixes in PR #143):
 1. **Missing Tests**: Zero test coverage (no .test.ts or .spec.ts files exist)
-   - ⏳ **Status**: Deferred to follow-up task
+   - ⏳ **Status**: Deferred to follow-up PR after #143 merges
 2. ✅ **Data Model Issue**: Fixed in PR #143
    - Migrated Users table to use `userId` as primary key
    - Added EmailIndex GSI for email lookups
@@ -129,6 +148,9 @@ None
 4. ✅ **Missing Observability**: Fixed in PR #143
    - Added structured JSON logging utility
    - CloudWatch Logs Insights compatible
+5. ✅ **ESLint Errors**: Fixed in PR #143
+   - Added Node.js globals to ESLint config
+   - All packages pass `pnpm lint` locally
 
 ### Low Priority
 None
