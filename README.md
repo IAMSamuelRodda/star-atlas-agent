@@ -11,9 +11,15 @@ Voice-first AI agent for Star Atlas fleet monitoring, economic optimization, and
 
 ## Overview
 
-Star Atlas Agent is a multi-user SaaS platform that provides intelligent, voice-driven assistance for Star Atlas players. Monitor your fleet status, optimize crafting economics, and get AI-powered gameplay recommendations through a natural conversational interface.
+Star Atlas Agent is a voice-first AI assistant for Star Atlas players, evolving from traditional SaaS (Phase 1) to NFT-based agent ownership (Phase 2). Monitor fleets, optimize economics, and get AI-powered gameplay recommendations through natural conversation.
 
-**Key Features:**
+**Unique Value Proposition (Phase 2)**:
+- 🎯 **True Ownership** - Mint your agent as an NFT, you own the personality (not rented access)
+- 🔄 **Portable Across Infrastructures** - Agent runs on our platform, competitors, or self-hosted (you choose)
+- 💎 **Tradeable Asset** - Experienced agents gain value, sell on marketplaces (Magic Eden, Tensor)
+- 🧠 **Growing Personality** - On-chain memory (Star Frame) captures key learnings, strategies, trust progression
+
+**Key Features (Phase 1 MVP)**:
 - 🎙️ **Voice-First Interface** - Cortana-like experience with <500ms response time
 - 🚀 **Fleet Monitoring** - Real-time alerts for fuel, repairs, and resource needs
 - 💰 **Economic Optimization** - Crafting ROI analysis and resource allocation
@@ -98,4 +104,33 @@ MIT
 
 ---
 
-**Last Updated**: 2025-11-12
+---
+
+## Roadmap
+
+### Phase 1: MVP (Months 1-6)
+- Voice-first AI agent (WebRTC + Whisper + ElevenLabs)
+- Fleet monitoring and alerts (Solana WebSocket subscriptions)
+- Economic optimization (crafting ROI, resource allocation)
+- Cloud-only memory (DynamoDB vector store)
+- **Business Model**: $10/month SaaS subscription
+
+### Phase 2: NFT Ownership (Months 7-12)
+- Metaplex NFT minting (agent ownership tokens)
+- Star Frame on-chain personality program (Rust)
+- Memory compression (10 KB → 256 bytes, 97.5% reduction)
+- Open-source agent runtime (enable competitor infrastructures)
+- **Business Model**: $50 NFT mint + $5/month infrastructure + 5% marketplace royalties
+
+### Phase 3: Decentralized (Months 13-24)
+- Fully decentralized agent runtime
+- Multi-infrastructure support (ours, competitors, self-hosted)
+- Marketplace integrations (Magic Eden, Tensor, Solanart)
+- Compete on UX/performance, not lock-in
+
+See: `docs/research/portable-agent-ownership-architecture.md` for complete Phase 2 architecture
+See: GitHub Epic #142 for implementation roadmap
+
+---
+
+**Last Updated**: 2025-11-13
