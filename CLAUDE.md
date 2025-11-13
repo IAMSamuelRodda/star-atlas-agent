@@ -6,10 +6,11 @@
 ## 📍 Critical Documents
 
 **Before starting work:**
-1. `STATUS.md` → Current issues, active work, blockers
-2. `ARCHITECTURE.md` → System design, database schema, tech stack
-3. `CONTRIBUTING.md` → Progress tracking workflow
-4. `docs/planning-session-2025-11-12.md` → Vision alignment & constraints
+1. `VISION.md` → **Why we're building this** (read first for context and passion)
+2. `STATUS.md` → Current issues, active work, blockers
+3. `ARCHITECTURE.md` → System design, database schema, tech stack
+4. `CONTRIBUTING.md` → Progress tracking workflow
+5. `docs/planning-session-2025-11-12.md` → Vision alignment & constraints
 
 **Before finishing work:**
 1. Update `STATUS.md` → Document investigation notes
@@ -64,4 +65,4 @@ See `ARCHITECTURE.md` for complete details.
 
 ---
 
-**Last Updated**: 2025-11-12
+**Last Updated**: 2025-11-13
