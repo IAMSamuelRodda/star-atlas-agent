@@ -19,6 +19,20 @@ export interface User {
   createdAt: number;
   lastLoginAt: number;
   walletAddress?: string;
+  // Profile fields
+  displayName?: string;
+  avatarUrl?: string;
+  timezone?: string;
+  notificationPreferences?: {
+    email?: boolean;
+    push?: boolean;
+    voice?: boolean;
+  };
+  preferences?: {
+    language?: string;
+    theme?: 'light' | 'dark' | 'auto';
+    voiceEnabled?: boolean;
+  };
 }
 
 export interface SendMagicLinkRequest {

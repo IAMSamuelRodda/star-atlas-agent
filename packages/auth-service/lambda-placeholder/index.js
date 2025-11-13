@@ -69,6 +69,43 @@ exports.handler = async (event) => {
     };
   }
 
+  // Get profile endpoint
+  if (path === '/profile' && method === 'GET') {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user: {
+          userId: 'placeholder-user-id',
+          email: 'user@example.com',
+          displayName: 'Placeholder User',
+          avatarUrl: 'https://via.placeholder.com/150',
+          timezone: 'UTC',
+          createdAt: Date.now() - (30 * 24 * 60 * 60 * 1000),
+          lastLoginAt: Date.now(),
+        },
+      }),
+    };
+  }
+
+  // Update profile endpoint
+  if (path === '/profile' && method === 'PUT') {
+    const body = JSON.parse(event.body || '{}');
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: 'Profile updated (placeholder)',
+        user: {
+          userId: 'placeholder-user-id',
+          email: 'user@example.com',
+          ...body,
+          updatedAt: Date.now(),
+        },
+      }),
+    };
+  }
+
   return {
     statusCode: 404,
     headers: { 'Content-Type': 'application/json' },

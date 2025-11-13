@@ -211,6 +211,18 @@ resource "aws_apigatewayv2_route" "auth_wallet_verify" {
   target    = "integrations/${aws_apigatewayv2_integration.auth_service.id}"
 }
 
+resource "aws_apigatewayv2_route" "profile_get" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /profile"
+  target    = "integrations/${aws_apigatewayv2_integration.auth_service.id}"
+}
+
+resource "aws_apigatewayv2_route" "profile_update" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "PUT /profile"
+  target    = "integrations/${aws_apigatewayv2_integration.auth_service.id}"
+}
+
 # Lambda Permission: API Gateway Invoke
 resource "aws_lambda_permission" "auth_service_apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
