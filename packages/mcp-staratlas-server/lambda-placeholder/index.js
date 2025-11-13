@@ -1,15 +1,39 @@
-// MCP Server Lambda Placeholder
-// This will be replaced with actual MCP tools for Star Atlas + Solana
-
+// Placeholder Lambda handler for mcp-staratlas-server
 exports.handler = async (event) => {
-  console.log('MCP Server Lambda - Placeholder');
-  console.log('Event:', JSON.stringify(event, null, 2));
+  const path = event.rawPath;
+  const method = event.requestContext.http.method;
+
+  if (path === '/mcp/tools' && method === 'POST') {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: 'MCP tools placeholder',
+        tools: [
+          { name: 'get_fleet_status', description: 'Get fleet status' },
+          { name: 'get_market_prices', description: 'Get market prices' },
+          { name: 'get_wallet_balance', description: 'Get wallet balance' },
+        ],
+      }),
+    };
+  }
+
+  if (path === '/mcp/execute' && method === 'POST') {
+    const body = JSON.parse(event.body || '{}');
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: 'MCP execute placeholder',
+        tool: body.tool || 'No tool specified',
+        result: {},
+      }),
+    };
+  }
 
   return {
-    statusCode: 200,
-    body: JSON.stringify({
-      message: 'MCP Server Lambda - Not yet implemented',
-      timestamp: new Date().toISOString()
-    })
+    statusCode: 404,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ error: 'Not found', path }),
   };
 };

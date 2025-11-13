@@ -36,7 +36,24 @@ variable "enable_memory_system" {
   default     = false # Disabled for initial setup
 }
 
+# Deployment Configuration
+
+variable "deployment_id" {
+  description = "Deployment identifier (commit SHA for version tracking)"
+  type        = string
+  default     = "initial"
+}
+
 # Tags
+
+variable "tags" {
+  description = "Default tags to apply to all resources"
+  type        = map(string)
+  default     = {
+    Project   = "star-atlas-agent"
+    ManagedBy = "terraform"
+  }
+}
 
 variable "additional_tags" {
   description = "Additional tags to apply to all resources"

@@ -131,5 +131,25 @@ output "charts_bucket_arn" {
   value       = aws_s3_bucket.charts.arn
 }
 
-# Future outputs:
-# - API Gateway URLs
+# API Gateway Outputs
+
+output "api_gateway_id" {
+  description = "ID of the API Gateway HTTP API"
+  value       = aws_apigatewayv2_api.main.id
+}
+
+output "api_gateway_endpoint" {
+  description = "Endpoint URL of the API Gateway"
+  value       = aws_apigatewayv2_api.main.api_endpoint
+}
+
+output "api_gateway_invoke_url" {
+  description = "Invoke URL for the API Gateway (includes stage)"
+  value       = "${aws_apigatewayv2_api.main.api_endpoint}/"
+}
+
+# Deployment version tracking (for auto-rollback)
+output "current_version" {
+  description = "Current deployment version (commit SHA)"
+  value       = var.deployment_id
+}
