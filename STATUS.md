@@ -57,8 +57,11 @@
   - Portable Agent Architecture: NFT-based ownership model, users own personality (sell/transfer)
 
 **In Progress:**
-- 🔍 Investigating previous work after IDE crash
-- Determining next development phase (Memory Service, Agent Core, or MCP Server)
+- 🔧 Auth service improvements (PR #143)
+  - Schema migration (userId as primary key)
+  - Rate limiting middleware
+  - Structured logging
+  - Security hardening
 
 **Recently Completed (2025-11-13):**
 - ✅ Epic #1 - Foundation & Infrastructure (Issues #1-15)
@@ -71,6 +74,8 @@
   - User profile management (DynamoDB)
   - JWT utilities and auth middleware
 - ✅ Web app wallet connection components (partial)
+- ✅ IDE crash recovery + codebase audit
+- 🚧 Auth service improvements (PR #143 - pending review)
 
 **Next Up:**
 - [ ] Add test coverage for auth-service
@@ -111,17 +116,19 @@ None
   4. Merge after review
 
 ### Medium Priority
-**Auth Service Issues** (Post-implementation review 2025-11-13):
+**Auth Service Issues** (Post-implementation review 2025-11-13, fixes in PR #143):
 1. **Missing Tests**: Zero test coverage (no .test.ts or .spec.ts files exist)
-2. **Data Model Issue**: Users table uses `email` as primary key, but wallet-only users get placeholder emails (`{wallet}@wallet.local`). This could cause:
-   - Collision if real user has that email domain
-   - Notification failures (not a real email)
-   - **Recommendation**: Migrate to `userId` as primary key
-3. **Security Gaps**:
-   - No rate limiting on magic link sends (spam/abuse risk)
-   - Email normalization inconsistent (lowercase in some places, not others)
-   - No input sanitization beyond basic validation
-4. **Missing Observability**: Only console.error logging, no structured logging or metrics
+   - ⏳ **Status**: Deferred to follow-up task
+2. ✅ **Data Model Issue**: Fixed in PR #143
+   - Migrated Users table to use `userId` as primary key
+   - Added EmailIndex GSI for email lookups
+   - Removed placeholder emails (email now optional)
+3. ✅ **Security Gaps**: Fixed in PR #143
+   - Added rate limiting middleware (3 req/min for magic links)
+   - Consistent email normalization (lowercase + trim)
+4. ✅ **Missing Observability**: Fixed in PR #143
+   - Added structured JSON logging utility
+   - CloudWatch Logs Insights compatible
 
 ### Low Priority
 None
