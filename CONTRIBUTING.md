@@ -169,15 +169,56 @@ Closes #42
 - Reduces manual PR merging overhead
 - Squash commits for clean history
 
-### Deployments
-- **deploy-staging.yml**: Deploys dev → staging (comprehensive E2E tests)
-- **deploy-production.yml**: Deploys main → production (smoke tests + auto-rollback)
-- **e2e-tests.yml**: Reusable E2E testing workflow
+### Deployments (Manual Triggers)
 
-### Deployment Strategy (Amazon-style)
-- **Staging**: Comprehensive E2E tests (full validation)
-- **Production**: Minimal smoke tests + health checks + CloudWatch monitoring
-- **Auto-rollback**: Production deployments roll back automatically if health checks fail
+**IMPORTANT**: All deployments are manual and MUST be from main branch.
+
+**How to Deploy**:
+```bash
+# Ensure you're on main branch
+git checkout main
+git pull origin main
+
+# Deploy to staging
+gh workflow run deploy-staging.yml
+
+# Deploy to production
+gh workflow run deploy-production.yml
+```
+
+Via GitHub UI: **Actions** → **Deploy to Staging/Production** → **Run workflow** (must be on main branch)
+
+**Workflows**:
+- **deploy-staging.yml**: Manual deployment to staging environment
+  - **REQUIRES main branch** (enforced - will fail otherwise)
+  - Runs health checks after deployment
+  - No E2E tests in deployment (run separately)
+
+- **deploy-production.yml**: Manual deployment to production environment
+  - **REQUIRES main branch** (enforced - will fail otherwise)
+  - Includes health checks, CloudWatch metrics monitoring
+  - **Auto-rollback** on health check or metric failures
+  - No E2E tests in deployment (run separately)
+
+- **e2e-tests.yml**: Standalone E2E testing workflow
+  - **Runs separately** from deployments (does NOT block deploys)
+  - Manual trigger: Run on-demand against staging or production
+  - Scheduled: Daily at 2 AM UTC against staging
+  - Can be called from other workflows
+  - Results uploaded as artifacts (30-day retention)
+
+### Deployment Strategy
+
+**Philosophy**: E2E tests do NOT block deployments
+
+- **Staging**: Health checks only (E2E tests run separately)
+- **Production**: Health checks + CloudWatch metrics monitoring + auto-rollback
+- **E2E Tests**: Run independently via e2e-tests.yml workflow
+  - Provides continuous quality monitoring
+  - Failures reported but don't block deployments
+  - Allows rapid iteration and hotfixes when needed
+
+**Environment Secrets**: See `.github/SECRETS_MIGRATION.md` for setup
 
 ---
 
