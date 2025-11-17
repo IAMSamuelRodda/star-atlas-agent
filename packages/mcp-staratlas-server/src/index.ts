@@ -17,6 +17,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { SERVER_NAME, SERVER_VERSION } from "./constants.js";
+import { registerShipTools } from "./tools/ships.js";
 
 /**
  * Initialize the MCP server instance
@@ -27,11 +28,26 @@ const server = new McpServer({
 });
 
 /**
+ * Register all MCP tools
+ */
+function registerTools() {
+  console.error("[Server] Registering tools...");
+
+  // Ship-related tools (Galaxy API + S3 cache)
+  registerShipTools(server);
+
+  console.error("[Server] Tools registered successfully");
+}
+
+/**
  * Main server entry point
  */
 async function main() {
   // Validate required environment variables
   validateEnvironment();
+
+  // Register all tools with the server
+  registerTools();
 
   // Create stdio transport for MCP communication
   const transport = new StdioServerTransport();
