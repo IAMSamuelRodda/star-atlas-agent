@@ -1,11 +1,12 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, QueryCommand, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, QueryCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { PublicKey } from '@solana/web3.js';
 import { nanoid } from 'nanoid';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 import { createJWT } from '../utils/jwt.js';
+import { logger } from '../utils/logger.js';
 import type { User } from '../types.js';
 
 const ddbClient = new DynamoDBClient({});
@@ -105,11 +106,10 @@ export async function verifyWalletSignature(
     let user: User;
 
     if (!userResult.Items || userResult.Items.length === 0) {
-      // Create new user with wallet
+      // Create new user with wallet (no email required)
       const userId = nanoid();
       user = {
         userId,
-        email: `${body.walletAddress}@wallet.local`, // Placeholder email
         walletAddress: body.walletAddress,
         createdAt: Date.now(),
         lastLoginAt: Date.now(),
@@ -128,7 +128,7 @@ export async function verifyWalletSignature(
       await ddb.send(
         new UpdateCommand({
           TableName: USERS_TABLE,
-          Key: { email: user.email },
+          Key: { userId: user.userId },
           UpdateExpression: 'SET lastLoginAt = :now',
           ExpressionAttributeValues: { ':now': Date.now() },
         })
@@ -138,7 +138,13 @@ export async function verifyWalletSignature(
     // Create JWT
     const jwtToken = createJWT({
       userId: user.userId,
-      email: user.email,
+      email: user.email || '', // Email may be undefined for wallet-only users
+    });
+
+    logger.info('Wallet signature verified successfully', {
+      userId: user.userId,
+      walletAddress: user.walletAddress,
+      isNewUser: !userResult.Items || userResult.Items.length === 0,
     });
 
     return {
@@ -154,7 +160,11 @@ export async function verifyWalletSignature(
       }),
     };
   } catch (error) {
-    console.error('Error verifying wallet signature:', error);
+    logger.error(
+      'Failed to verify wallet signature',
+      {},
+      error instanceof Error ? error : new Error(String(error))
+    );
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },

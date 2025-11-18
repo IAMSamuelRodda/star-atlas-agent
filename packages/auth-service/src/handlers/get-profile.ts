@@ -1,6 +1,7 @@
 import { APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { logger } from '../utils/logger.js';
 import type { AuthenticatedEvent } from '../middleware/auth.js';
 import type { User } from '../types.js';
 
@@ -21,11 +22,11 @@ export async function getProfile(
       };
     }
 
-    // Get user profile from DynamoDB
+    // Get user profile from DynamoDB using userId
     const result = await ddb.send(
       new GetCommand({
         TableName: USERS_TABLE,
-        Key: { email: event.auth.email },
+        Key: { userId: event.auth.userId },
       })
     );
 
@@ -61,7 +62,11 @@ export async function getProfile(
       }),
     };
   } catch (error) {
-    console.error('Error getting profile:', error);
+    logger.error(
+      'Failed to get profile',
+      { userId: event.auth?.userId },
+      error instanceof Error ? error : new Error(String(error))
+    );
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
