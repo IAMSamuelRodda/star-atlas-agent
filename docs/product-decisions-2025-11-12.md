@@ -10,42 +10,37 @@
 
 | Decision Area | MVP Approach | Post-MVP / Future | Spike Required? |
 |---------------|--------------|-------------------|-----------------|
-| Voice UX | Push-to-talk | Always-listening (toggle) | ❌ No |
+| Voice UX | Three-state: Off/PTT/Always On | Same (ChatGPT/Grok model) | ❌ No |
 | Authentication | Email + Wallet + zProfile | Same, with smoother onboarding | ✅ Yes (z.ink integration) |
-| Subscription Tiers | TBD | Free / Pro / Ultimate | ✅ Yes (feature distribution) |
-| Memory Retention | Human-like (key memories) | Same | ✅ Yes (cost optimization) |
+| Subscription Tiers | Free only (MVP) | TBD based on costs/needs | ❌ No (plan later) |
+| Memory Retention | Knowledge graph (pip-by-arc-forge) | Same | ✅ Yes (implementation) |
 | Visualizations | Data-rich backend, light UI | Expand based on feedback | ❌ No (clear strategy) |
 
 ---
 
 ## 1. Voice UX Decision
 
-### MVP: Push-to-Talk (PTT)
+### MVP: Three-State Voice Mode (ChatGPT/Grok Model)
+
+**Voice Mode Options** (user toggle):
+- **Off**: No voice - text-only interface
+- **Push-to-Talk (PTT)**: Hold to speak, release to send
+- **Always On**: Continuous listening with interrupt capability
+
+**Key Feature**: **Interrupt mid-response** - like human conversation, user can cut in anytime and agent stops to listen. This is the ChatGPT/Grok voice model, not traditional voice assistants.
+
+**Implementation**:
+- Three-state toggle in UI settings (Off / PTT / Always On)
+- PTT: Hold spacebar or on-screen button
+- Always On: Continuous listening, user voice interrupts agent speech
+- Visual indicator: Clear recording/listening state
+
 **Rationale**:
-- Simpler implementation (no wake word detection)
-- Lower cost (no always-on audio stream processing)
-- Better privacy (explicit user control)
-- Faster to market
+- Matches modern conversational AI expectations (ChatGPT, Grok)
+- Natural human-like interaction (can interrupt, clarify, redirect)
+- User controls their preferred interaction mode
 
-**Implementation**:
-- Web: Hold spacebar or on-screen button
-- Mobile: Tap-and-hold button
-- Visual indicator: Recording state clear
-
-**Cost Impact**: $0 (baseline voice service already budgeted)
-
-### Post-MVP: Always-Listening (Optional)
-**Trigger for implementation**: User requests or competitive pressure
-
-**Implementation**:
-- Wake word: "Hey Cortana" (customizable)
-- User setting: Toggle always-listening on/off
-- Privacy indicator: LED/icon when listening
-- Local wake word detection (Picovoice Porcupine ~$1/month)
-
-**Cost Impact**: +$1-2/month per active always-listening user
-
-**Timeline**: 3-6 months post-MVP
+**Cost Impact**: $0 (Chatterbox self-hosted)
 
 ---
 
@@ -151,115 +146,57 @@ Agent: "Great! I'm opening your wallet connection now..."
 
 ---
 
-## 3. Subscription Tier Decision (Spike Required)
+## 3. Subscription Tier Decision (Deferred)
 
 ### Core Philosophy: "Audible Model"
 
-**Principle**: Users should never feel like they lose their "friend" or "progress" if they stop paying
+**Principle**: Users should never feel like they lose their "friend" or "progress" if they stop paying. Your relationship (memory, preferences) is permanent - only feature access changes.
 
-**Key Insight from Audible**:
-- You keep your books even if you cancel subscription
-- You just can't get *new* books without paying
-- Your library and progress are permanent
+### MVP Approach: Free Only
 
-**Applied to Star Atlas Agent**:
-- You keep your *relationship* (memory, personality) even if you cancel
-- You just can't access *premium features* without paying
-- Your fleet data, conversation history, and preferences are permanent
+**Rationale**: Avoid premature pricing decisions. We need to understand:
+1. Actual cost-per-user (VPS + Chatterbox + Solana RPC)
+2. Which features users value most
+3. Natural usage patterns and limits
 
-### Proposed Tier Structure (Requires Spike)
+### When to Plan Tiers
 
-**Free Tier** (Always available):
-- ✅ Basic fleet monitoring (5 fleets max)
-- ✅ Voice interactions (100 queries/month limit)
-- ✅ Price checking (5-min delayed data)
-- ✅ Basic memory (7-day short-term only)
-- ✅ Profile access (can view but not edit)
-- ❌ No economic optimization
-- ❌ No proactive alerts
-- ❌ No always-listening
+Plan subscription tiers AFTER:
+- MVP has 50+ active users
+- We understand actual infrastructure costs
+- We see which features drive engagement
+- We have user feedback on willingness to pay
 
-**Pro Tier** ($9.99/month):
-- ✅ Unlimited fleets
-- ✅ Unlimited voice queries
-- ✅ Real-time market data
-- ✅ Full memory (long-term + semantic)
-- ✅ Economic optimization (crafting ROI)
-- ✅ Proactive alerts (fuel, repairs)
-- ✅ Custom visualizations
-- ❌ No transaction automation
-- ❌ No multi-user coordination
+### Retention Policy (Core Principle - Apply When Tiers Exist)
 
-**Ultimate Tier** ($29.99/month):
-- ✅ Everything in Pro
-- ✅ Always-listening mode
-- ✅ Transaction automation (within user-set limits)
-- ✅ Multi-user coordination (guild features)
-- ✅ Advanced analytics (custom dashboards)
-- ✅ Priority support
-- ✅ Early access to new features
-
-### Retention Policy (Critical)
-
-**When user cancels subscription**:
-- ✅ **Keep**: All conversation history (read-only)
-- ✅ **Keep**: Fleet configurations (read-only)
-- ✅ **Keep**: Profile and preferences
-- ⏸️ **Pause**: Proactive monitoring (no new alerts)
-- ⏸️ **Pause**: Long-term memory updates (no new learning)
-- 🔒 **Lock**: Premium features (economic optimization, automation)
+**When user cancels**:
+- ✅ **Keep**: All conversation history, fleet configs, preferences
+- ⏸️ **Pause**: Premium feature access
 
 **When user re-subscribes**:
-- ✅ **Restore**: Full feature access immediately
-- ✅ **Resume**: Memory and learning
-- ✅ **Continuity**: "Welcome back, Sam! It's been 3 weeks. Let me catch up on your fleets..."
+- ✅ **Restore**: Full access immediately, memory intact
+- ✅ **Continuity**: Agent remembers everything, welcomes them back
 
 **Goal**: User feels like they're **pausing a friendship**, not **losing a friend**
 
-### Spike Questions
-
-1. **Feature Distribution**:
-   - Which features drive most value? (MVP data will reveal)
-   - What's the minimum viable Free tier to hook users?
-   - Where's the Pro/Ultimate boundary? (usage-based vs capability-based)
-
-2. **Pricing Psychology**:
-   - Is $9.99 the right Pro price? (A/B test $7.99 vs $9.99 vs $14.99)
-   - Should Ultimate be $19.99 or $29.99? (guild features justify higher?)
-   - Annual discount? (20% off = better retention)
-
-3. **Retention Metrics**:
-   - How long do canceled users typically wait before re-subscribing?
-   - Does "keep your data" policy improve retention vs competitors?
-   - What % of Free users convert to Pro? (industry: 2-5%)
-
-4. **Cost-to-Serve**:
-   - What's the actual cost per Free user? (target: <$0.25/month)
-   - What's the margin on Pro? (target: >70%)
-   - Can we sustain Free tier at scale? (cross-subsidy model)
-
-**Timeline**:
-- **MVP (Month 1-3)**: Free tier only (validate product-market fit)
-- **Month 4-6**: Introduce Pro tier (early adopter pricing)
-- **Month 7-12**: Add Ultimate tier (after guild features built)
-
 ---
 
-## 4. Memory Retention Decision (Spike Required)
+## 4. Memory Retention Decision
 
-### Core Philosophy: "Simulate Humans"
+### Core Philosophy: "pip-by-arc-forge Knowledge Graph"
 
-**How humans remember**:
-- 🔥 **Vivid details** from recent events (hours-days ago)
-- 💡 **Key moments** from important conversations (weeks-months ago)
-- 🎭 **General impressions** of relationships (years ago)
-- ❌ **Not verbatim** everything (we forget details, keep essence)
+**Pattern**: SQLite-based knowledge graph with entities, observations, and relations - NOT vector embeddings.
+
+**How it works**:
+- **Entities**: User, fleets, starbases, preferences (nodes)
+- **Observations**: Facts learned about entities ("Sam prefers fuel efficiency")
+- **Relations**: Connections between entities ("Sam owns Fleet Alpha")
 
 **Applied to Agent Memory**:
-- 🔥 **Session memory**: Exact conversation (current session only)
-- 💡 **Key memories**: Important decisions, preferences, events (permanent)
-- 🎭 **Relationship impression**: User's style, risk tolerance, goals (permanent)
-- ❌ **Not verbatim**: Old conversations compressed to embeddings, details fade
+- 🔥 **Session memory**: Current conversation context (in-memory)
+- 💡 **Key observations**: Important facts, preferences, decisions (SQLite, permanent)
+- 🎭 **Relationship through memory**: Organic bond from shared experiences, NOT XP-based progression
+- ❌ **Not verbatim**: Old conversations summarized into observations
 
 ### Proposed Memory Architecture
 
@@ -289,37 +226,38 @@ Monday 8pm: "Did you get those repairs done?" ← Agent remembers context from 1
 
 **Rationale**: Humans remember conversations vividly for ~2 days, then details fade
 
-#### Tier 3: Key Memories (Permanent, Sparse)
+#### Tier 3: Observations (Permanent, Knowledge Graph)
 **Retention**: Permanent
-**Fidelity**: Summarized + tagged (not verbatim)
-**Storage**: DynamoDB + vector embeddings
-**Trigger**: Agent identifies "important moment" via Claude
+**Fidelity**: Structured facts (not verbatim)
+**Storage**: SQLite knowledge graph (pip-by-arc-forge pattern)
+**Trigger**: Agent identifies "important fact" via Claude
 
-**Important Moments**:
+**Important Observations**:
 - User sets a goal ("I want to build 10 fighters")
 - User makes a significant decision ("Sold all titanium, going all-in on iron")
 - User shares personal context ("Going on vacation next week")
 - User expresses preference ("I always prioritize fuel efficiency")
 - User corrects agent ("No, I prefer Route B because...")
 
-**Example Storage**:
-```json
-{
-  "memory_id": "mem_abc123",
-  "user_id": "user_xyz",
-  "timestamp": "2025-11-10T14:30:00Z",
-  "type": "preference",
-  "summary": "User prioritizes fuel efficiency over speed",
-  "embedding": [0.234, -0.567, ...],  // Vector for similarity search
-  "metadata": {
-    "confidence": 0.95,
-    "context": "route_planning",
-    "reinforced_count": 3  // User has confirmed this 3 times
-  }
-}
+**Example Storage** (Knowledge Graph Pattern):
+```sql
+-- Entities table
+INSERT INTO entities (id, type, name) VALUES
+  ('user_xyz', 'user', 'Sam'),
+  ('fleet_alpha', 'fleet', 'Fleet Alpha');
+
+-- Observations table
+INSERT INTO observations (entity_id, observation, created_at) VALUES
+  ('user_xyz', 'Prioritizes fuel efficiency over speed', '2025-11-10'),
+  ('user_xyz', 'Prefers scenic routes even if slower', '2025-11-10');
+
+-- Relations table
+INSERT INTO relations (from_id, relation, to_id) VALUES
+  ('user_xyz', 'owns', 'fleet_alpha'),
+  ('fleet_alpha', 'stationed_at', 'starbase_7');
 ```
 
-**Cost**: ~$5/month per 100 users (assuming 50 key memories per user)
+**Cost**: ~$0/month (SQLite file-based)
 
 #### Tier 4: User Profile (Permanent, High-Level)
 **Retention**: Permanent
@@ -354,14 +292,15 @@ Monday 8pm: "Did you get those repairs done?" ← Agent remembers context from 1
 
 ### Memory Compression Strategy (Cost Optimization)
 
-**Problem**: Storing full conversation transcripts expensive at scale
-**Solution**: Progressive compression
+**Problem**: Storing full conversation transcripts inefficient
+**Solution**: Progressive extraction to knowledge graph
 
 **Timeline**:
-- **0-48 hours**: Full conversation (verbatim)
-- **2-7 days**: Summarized conversation (Claude-generated summary)
-- **7-30 days**: Key memories only (extracted moments + embeddings)
-- **30+ days**: Relationship impression only (structured profile updates)
+- **0-48 hours**: Full conversation (verbatim in SQLite)
+- **2-7 days**: Extract observations to knowledge graph
+- **7+ days**: Observations only (original conversation deleted)
+
+**Note**: No embeddings used - knowledge graph provides structure for retrieval.
 
 **Example Compression**:
 
@@ -378,26 +317,15 @@ Agent: "Understood. Taking the route through Sector 9 adds 30 minutes but you me
 "User moved Fleet Alpha from Starbase 7 to Starbase 12 via Sector 9 (scenic route preference confirmed)"
 ```
 
-**Day 8** (Key Memory Extracted):
-```
-{
-  "type": "preference",
-  "summary": "User prefers scenic routes even if slower (Sector 9 example)",
-  "embedding": [...]
-}
+**Day 8** (Observation Extracted to Knowledge Graph):
+```sql
+INSERT INTO observations (entity_id, observation, created_at) VALUES
+  ('user_xyz', 'Prefers scenic routes even if slower (Sector 9 example)', '2025-11-03');
 ```
 
-**Day 31** (Profile Update Only):
-```
-{
-  "route_preferences": {
-    "scenic_routes": "preferred",
-    "time_sensitivity": "low"
-  }
-}
-```
+**Conversation deleted** - observation captures the essential learning.
 
-**Cost Savings**: 95% reduction in storage costs after 30 days
+**Cost Savings**: ~95% reduction in storage (only structured observations retained)
 
 ### Spike Questions
 
@@ -411,15 +339,10 @@ Agent: "Understood. Taking the route through Sector 9 adds 30 minutes but you me
    - What's the false positive rate? (storing unimportant memories)
    - How many key memories per user per month? (estimate 10-20)
 
-3. **Relationship Metrics**:
-   - What trust score algorithm? (simple: interactions/corrections ratio)
-   - How to measure personality phase progression? (rule-based vs ML)
-   - Should users see these metrics? (transparency vs magic)
-
-4. **Cost Validation**:
-   - Actual DynamoDB costs with realistic data? (need pilot)
-   - Embedding generation cost? (Bedrock Titan v2: $0.0001/1K tokens)
-   - Total memory cost per user per month? (target: <$0.25)
+3. **Knowledge Graph Schema**:
+   - Entity types needed for MVP? (user, fleet, starbase, preference)
+   - Relation types? (owns, stationed_at, prefers, traded)
+   - Observation categories? (preference, goal, context, decision)
 
 **Timeline**:
 - **Month 1-2**: Build basic architecture (all tiers)
@@ -584,7 +507,7 @@ Total: 60 tokens
 
 ---
 
-## Summary: Spikes Required
+## Summary: Remaining Spikes
 
 ### 1. z.ink / zProfile Integration (High Priority)
 **Timeline**: December 2025 (after z.ink mainnet launch)
@@ -596,25 +519,14 @@ Total: 60 tokens
 
 **Deliverable**: Technical feasibility doc + integration plan
 
-### 2. Subscription Tier Feature Distribution (Medium Priority)
-**Timeline**: Month 3-4 (after MVP user data)
+### 2. Knowledge Graph Implementation (Medium Priority)
+**Timeline**: Month 1-2 (MVP core feature)
 **Questions**:
-- Which features drive most value?
-- Optimal Free tier to hook users?
-- Pro/Ultimate pricing sweet spot?
-- Retention metrics vs competitors?
+- Optimal schema for Star Atlas domain?
+- Observation extraction accuracy?
+- Query patterns for personalization?
 
-**Deliverable**: Pricing strategy with A/B test plan
-
-### 3. Memory Retention Cost Optimization (Medium Priority)
-**Timeline**: Month 2-3 (during MVP with pilot users)
-**Questions**:
-- Actual DynamoDB costs with real data?
-- Compression effectiveness?
-- Key memory identification accuracy?
-- Cost per user at scale?
-
-**Deliverable**: Optimized memory architecture with cost model
+**Deliverable**: Working knowledge graph with pip-by-arc-forge pattern
 
 ---
 

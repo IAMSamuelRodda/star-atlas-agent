@@ -1,64 +1,64 @@
-# Memory Architecture Spike - Star Atlas Agent
+# Memory Architecture - IRIS
 
-**Date**: 2025-11-12
-**Status**: Research Complete → Ready for Implementation Planning
-**Cost Impact**: +$20-25/month to base architecture (still under $50/month total)
+**Date**: 2025-11-12 (Updated: 2025-12-02)
+**Status**: Architecture Defined → Ready for Implementation
+**Cost Impact**: $0/month incremental (SQLite on existing VPS)
 
 ---
 
 ## Executive Summary
 
-**Vision**: Build a personalized AI agent with persistent memory and contextual learning.
+**Vision**: Build a personalized AI agent with persistent memory and organic relationship development through shared experiences.
 
-**Solution**: SQLite-based storage on VPS for RAG (Retrieval-Augmented Generation) with tiered memory architecture.
+**Solution**: SQLite-based knowledge graph (pip-by-arc-forge pattern) with entities, observations, and relations - NOT vector embeddings.
 
-**Cost**: ~$0/month incremental (VPS-hosted SQLite, following pip-by-arc-forge pattern).
+**Cost**: ~$0/month incremental (VPS-hosted SQLite).
 
----
-
-## Research Findings
-
-### AWS Vector Database Options Evaluated
-
-| Solution | Cost (Est.) | Free Tier | Serverless | Recommendation |
-|----------|-------------|-----------|------------|----------------|
-| **DynamoDB + pgvector** | $20-30/mo | Partial (DynamoDB 25GB free) | ✅ Yes | ✅ **RECOMMENDED** |
-| Amazon Bedrock KB + OpenSearch | $50-100/mo | ❌ No | ✅ Yes | ❌ Too expensive |
-| RDS PostgreSQL + pgvector | $25-40/mo | Partial (12mo RDS free) | ❌ No | ⚠️ Not serverless |
-| OpenSearch Serverless | $60+/mo | ❌ No | ✅ Yes | ❌ Too expensive |
-
-### DynamoDB Vector Store Performance
-
-**AWS Guidance Project**: [guidance-for-low-cost-semantic-search-on-aws](https://github.com/aws-solutions-library-samples/guidance-for-low-cost-semantic-search-on-aws)
-
-**Benchmarks**:
-- 25K-30K embeddings: 100-200ms query latency ✅
-- 50K-100K embeddings: 500-800ms query latency ⚠️
-- >100K embeddings: Consider migration to OpenSearch Serverless
-
-**Cost Baseline** (AWS guidance, 200 PDFs + 6 queries/hour):
-- Total: $29.16/month
-- Breakdown:
-  - Lambda invocations: ~$5/month
-  - DynamoDB storage + queries: ~$15/month
-  - Bedrock embedding model (Titan v2): ~$8/month
-  - S3 document storage: ~$1/month
-
-**Our Optimization** (Star Atlas use case):
-- Fewer documents (user conversations + preferences, not 200 PDFs)
-- More frequent queries (voice interactions)
-- Estimated: $20-25/month
+**Key Principle**: Relationship develops organically through accumulated observations, NOT XP-based progression systems.
 
 ---
 
-## Four-Tier Memory Architecture
+## Architecture Decision
+
+### Why Knowledge Graph (Not Vector Embeddings)
+
+| Approach | Cost | Complexity | Retrieval | Chosen? |
+|----------|------|------------|-----------|---------|
+| **Knowledge Graph** | $0/mo | Simple | Structured queries | ✅ **YES** |
+| Vector Embeddings | $20-30/mo | Moderate | Semantic similarity | ❌ No |
+| RAG + Embeddings | $30-50/mo | Complex | Hybrid | ❌ No |
+
+### pip-by-arc-forge Pattern
+
+**Reference Implementation**: The pip-by-arc-forge project demonstrates a proven SQLite knowledge graph pattern:
+
+**Core Tables**:
+- `entities` - Nodes (users, fleets, starbases, resources)
+- `observations` - Facts about entities (preferences, decisions, context)
+- `relations` - Connections between entities (owns, stationed_at, prefers)
+
+**Benefits**:
+- Zero cost (SQLite file-based)
+- Simple queries (SQL, not vector math)
+- Human-readable data (easy debugging)
+- Structured retrieval (query by entity type, relation)
+- No external dependencies (no embedding API calls)
+
+**Performance**:
+- Query latency: <50ms (indexed SQLite)
+- Storage: ~1KB per observation
+- Scale: Handles 100K+ observations easily
+
+---
+
+## Three-Tier Memory Architecture
 
 ### 1. Session Memory (In-Memory)
 **Purpose**: Current conversation context
-**Storage**: Lambda execution environment (ephemeral)
+**Storage**: Node.js process memory (ephemeral)
 **Lifetime**: Duration of voice/chat session
 **Size**: Last 10-20 messages (~5-10KB)
-**Cost**: $0 (included in Lambda execution)
+**Cost**: $0
 
 **Example**:
 ```
@@ -67,57 +67,50 @@ Agent: "You have 3 fleets..."
 User: "Focus on Fleet Alpha"  ← Agent remembers "Fleet Alpha" from context
 ```
 
-### 2. Short-Term Memory (Hot Cache)
-**Purpose**: Recent interactions for context continuity
-**Storage**: DynamoDB with 7-day TTL
-**Lifetime**: 7 days
-**Size**: ~100 recent conversations per user (~50KB per user)
-**Cost**: ~$0.50/month per 100 active users
+### 2. Recent Conversations (SQLite, TTL)
+**Purpose**: Full conversation history for context continuity
+**Storage**: SQLite `conversations` table with 48-hour cleanup
+**Lifetime**: 48 hours (then observations extracted, conversation deleted)
+**Size**: ~50KB per user (recent conversations)
+**Cost**: $0
 
 **Example**:
 ```
-Monday: "I'm low on fuel at Starbase X"
-Tuesday: Agent proactively: "You mentioned fuel issues yesterday - want me to check Starbase X again?"
+Monday 10am: "I'm low on fuel at Starbase X"
+Monday 8pm: Agent: "You mentioned fuel issues earlier - want me to check Starbase X again?"
 ```
 
-### 3. Long-Term Memory (User Profile + Preferences)
-**Purpose**: Persistent user preferences, play style, decision patterns
-**Storage**: DynamoDB (no TTL) + vector embeddings
-**Lifetime**: Indefinite
-**Size**: ~200KB per user (preferences + embeddings)
-**Cost**: ~$2/month per 100 users
+### 3. Knowledge Graph (SQLite, Permanent)
+**Purpose**: Persistent observations, preferences, relationships
+**Storage**: SQLite tables (entities, observations, relations)
+**Lifetime**: Permanent
+**Size**: ~10KB per user (grows with interactions)
+**Cost**: $0
 
-**Data Stored**:
-- Fleet names and configurations
-- Preferred communication style (technical vs casual)
-- Risk tolerance (aggressive vs conservative trading)
-- Favorite starbases, routes, resources
-- Historical decisions (crafting choices, trade patterns)
+**Tables**:
+- `entities`: User, fleets, starbases, resources
+- `observations`: Facts learned ("Sam prioritizes fuel efficiency")
+- `relations`: Connections ("Sam owns Fleet Alpha")
 
 **Example**:
-```
-Agent learns: User always prioritizes fuel efficiency over speed
-Future recommendations: "Route A uses 20% less fuel but takes 1 hour longer - based on your preferences, I recommend Route A"
+```sql
+-- Query user preferences for route planning
+SELECT observation FROM observations
+WHERE entity_id = 'user_sam'
+AND observation LIKE '%route%' OR observation LIKE '%fuel%';
+
+-- Result: "Prioritizes fuel efficiency over speed"
+-- Result: "Prefers scenic routes even if slower"
 ```
 
-### 4. Semantic Memory (Pre-Loaded Game Knowledge)
-**Purpose**: Star Atlas game mechanics, strategies, market patterns
-**Storage**: DynamoDB vector embeddings (shared across all users)
+### Game Knowledge (Static JSON)
+**Purpose**: Star Atlas game mechanics (not per-user)
+**Storage**: JSON files bundled with application
 **Lifetime**: Updated with game patches
-**Size**: ~500KB-1MB (game knowledge base)
-**Cost**: ~$5/month (one-time storage, shared)
+**Size**: ~100KB (crafting recipes, starbase data)
+**Cost**: $0
 
-**Data Stored**:
-- Crafting recipes and optimization strategies
-- Starbase locations and capabilities
-- Resource market patterns
-- Common player strategies
-
-**Example**:
-```
-User: "What's the best way to make a Medium Fighter?"
-Agent retrieves: Crafting recipe + cost analysis + user's resource inventory → personalized recommendation
-```
+**Note**: Game knowledge is NOT in the database - it's static reference data loaded at startup.
 
 ---
 
@@ -169,7 +162,7 @@ Agent (visual): [Simple price trend line + agent's prediction overlay]
 
 ---
 
-## RAG Implementation Architecture
+## Knowledge Graph Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -179,171 +172,176 @@ Agent (visual): [Simple price trend line + agent's prediction overlay]
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    Agent Core (Lambda)                       │
+│                 Agent Core (Node.js on VPS)                  │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │  1. Classify query intent                            │  │
-│  │  2. Retrieve relevant context (vector search)        │  │
-│  │  3. Augment prompt with personalized context         │  │
+│  │  2. Query knowledge graph for relevant context       │  │
+│  │  3. Augment prompt with observations & relations     │  │
 │  │  4. Generate response (Claude Agent SDK)             │  │
-│  │  5. Store interaction embedding                      │  │
+│  │  5. Extract new observations (async)                 │  │
 │  └──────────────────────────────────────────────────────┘  │
 └───────┬─────────────────────────────────────────────────────┘
         │
         ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              DynamoDB Vector Store (Memory)                  │
-│  ┌─────────────────────┬─────────────────────┬────────────┐ │
-│  │  Short-Term         │  Long-Term          │  Semantic  │ │
-│  │  (7-day TTL)        │  (User Profile)     │  (Shared)  │ │
-│  ├─────────────────────┼─────────────────────┼────────────┤ │
-│  │ Recent convos       │ Preferences         │ Game rules │ │
-│  │ Context threads     │ Decision patterns   │ Strategies │ │
-│  │ Temp fleet states   │ Fleet configs       │ Recipes    │ │
-│  └─────────────────────┴─────────────────────┴────────────┘ │
-└───────┬─────────────────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────────────────┐
-│           Embedding Service (Bedrock Titan v2)               │
-│  - Convert text to 1024-dim vectors                          │
-│  - Cost: $0.0001 per 1K tokens                               │
-│  - Binary embeddings for cost optimization (50% savings)     │
+│              SQLite Knowledge Graph (Memory)                 │
+│  ┌─────────────────────────┬────────────────────────────┐  │
+│  │  conversations          │  entities / observations / │  │
+│  │  (48-hour TTL)          │  relations (permanent)     │  │
+│  ├─────────────────────────┼────────────────────────────┤  │
+│  │ Recent messages         │ User preferences           │  │
+│  │ Context threads         │ Fleet configurations       │  │
+│  │ Raw transcripts         │ Decision patterns          │  │
+│  └─────────────────────────┴────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
+
+No embedding service needed - structured SQL queries only.
 ```
 
 ---
 
-## Personality Progression (DEFERRED)
+## Relationship Development (Organic, Not XP-Based)
 
-> **Note**: Personality progression (colleague → partner → friend) is deferred until we have a robust, efficient memory system in place. Focus MVP on basic memory and preferences.
+**Core Principle**: IRIS's relationship with the user develops organically through shared experiences and accumulated observations - like a human relationship, NOT an XP/leveling system.
 
-**MVP Approach**:
-- Single consistent tone (helpful, professional)
-- User preferences stored and applied
-- No automatic tone shifts based on interaction count
+**Inspiration**: Halo's Cortana - Master Chief's intelligent AI companion. The bond grows through adventures together, not through explicit progression mechanics.
 
-**Post-MVP Consideration**:
-- Revisit after memory system is proven efficient
-- Consider simpler approach: user-selected tone preference
+**How It Works**:
+- Relationship depth emerges naturally from knowledge graph richness
+- More observations = deeper understanding = more personalized interactions
+- No explicit "trust score" or "friendship level" shown to user
+- Agent naturally becomes more helpful as it learns user preferences
 
----
+**Example**:
+```
+Early interaction:
+Agent: "Would you like me to check your fleet status?"
 
-## Cost Analysis (Updated with Memory)
+After many shared experiences:
+Agent: "Sam, Fleet Alpha is low on fuel again - I know you hate running
+out mid-route. Want me to plot a refuel stop at Starbase 7? It's on the
+scenic route through Sector 9 that you like."
+```
 
-### Base Architecture (from planning session)
-- Lambda + API Gateway: $0 (Free Tier, 1M requests/month)
-- DynamoDB (fleet data): $0 (Free Tier, 25GB)
-- S3 + CloudFront: $0 (Free Tier, 50GB + 1TB transfer)
-- ECS Fargate (voice service): $3-5/month
-- **Subtotal**: $3-7/month
-
-### Memory Architecture Addition
-- DynamoDB storage (embeddings): ~$10/month (beyond Free Tier)
-- DynamoDB queries (vector search): ~$5/month
-- Bedrock Titan v2 (embeddings): ~$8/month
-- Lambda (RAG processing): ~$2/month
-- **Subtotal**: ~$25/month
-
-### Total MVP Cost
-**$28-32/month** for fully personalized agent with memory
-
-**Cost per user** (100 users):
-- **$0.28-0.32 per user/month**
-- Subscription pricing: $5/month = sustainable at <20 users
-
-### Optimization Opportunities
-1. **Binary embeddings**: 50% cost reduction on Bedrock → $4/month savings
-2. **Aggressive TTL**: 3-day vs 7-day short-term memory → $2/month savings
-3. **Batch processing**: Group embedding requests → $3/month savings
-4. **User tiers**: Free = no long-term memory, Pro = full memory → variable cost
-
-**Optimized MVP Cost**: **$20-25/month** total
+**Anti-Pattern (What We DON'T Do)**:
+- ❌ "Trust Level: 47/100 - Unlock new features at level 50!"
+- ❌ "Friendship XP: +10 for completing a trade"
+- ❌ Explicit progression tiers (colleague → partner → friend)
 
 ---
 
-## Scalability & Migration Path
+## Cost Analysis
 
-### MVP (0-100 users)
-- DynamoDB vector store
-- Up to 30K embeddings per user
-- 100-200ms query latency
-- Cost: $20-30/month
+### VPS Architecture (Current)
+- Digital Ocean 4GB droplet: $0 incremental (already provisioned)
+- SQLite database: $0 (file-based)
+- Chatterbox voice: $0 (self-hosted)
+- Caddy reverse proxy: $0 (already running)
+- **Total**: $0/month incremental
 
-### Growth (100-1K users)
-- DynamoDB vector store (still cost-effective)
-- Sharding by user ID
-- Caching layer (ElastiCache)
-- Cost: $50-100/month
+### Memory Cost Breakdown
+- SQLite storage: $0 (included in VPS disk)
+- Knowledge graph queries: $0 (local SQL)
+- No embedding API calls: $0
+- **Total Memory Cost**: $0/month
 
-### Scale (1K-10K users)
-- Migrate to OpenSearch Serverless
-- Dedicated vector search infrastructure
-- Multi-region replication
-- Cost: $200-500/month
+### Cost Comparison (Why We Chose Knowledge Graph)
+
+| Approach | Monthly Cost | Notes |
+|----------|--------------|-------|
+| **Knowledge Graph (chosen)** | $0 | SQLite on VPS |
+| Vector Embeddings (AWS) | $20-30 | Bedrock + DynamoDB |
+| RAG + OpenSearch | $50-100 | Enterprise-grade |
+
+### Scaling Costs (Future)
+
+| Users | Architecture | Cost |
+|-------|-------------|------|
+| 0-500 | Current VPS | $0 incr |
+| 500-2K | Upgrade to 8GB VPS | +$24/mo |
+| 2K+ | Dedicated database server | +$50/mo |
+
+---
+
+## Scalability Path
+
+### MVP (0-500 users)
+- Single VPS + SQLite
+- Knowledge graph queries <50ms
+- Cost: $0 incremental
+
+### Growth (500-2K users)
+- Upgrade VPS to 8GB RAM
+- SQLite with WAL mode for concurrent reads
+- Cost: +$24/month
+
+### Scale (2K-10K users)
+- PostgreSQL on separate server
+- Read replicas if needed
+- Cost: +$50-100/month
 
 ### Enterprise (10K+ users)
-- Amazon Bedrock Knowledge Bases
-- Multi-AZ, auto-scaling
-- Advanced monitoring
-- Cost: $1K-5K/month
+- Managed PostgreSQL (Digital Ocean or AWS RDS)
+- Connection pooling (pgBouncer)
+- Consider horizontal sharding by user_id
+- Cost: $200+/month
 
-**Migration trigger**: When DynamoDB query latency >500ms consistently
+**Migration trigger**: When SQLite write contention causes >100ms latency
 
 ---
 
 ## Implementation Phases
 
-### Phase 1: Basic Memory (Week 1-2)
-- [ ] DynamoDB table design (users, conversations, embeddings)
-- [ ] Bedrock Titan v2 integration (embedding generation)
-- [ ] Vector search Lambda (cosine similarity)
-- [ ] Session memory (in-Lambda context)
+### Phase 1: Knowledge Graph Schema (Week 1-2)
+- [ ] SQLite schema (entities, observations, relations)
+- [ ] better-sqlite3 integration
+- [ ] Basic CRUD operations
+- [ ] Session memory (in-memory context)
 
-### Phase 2: RAG Integration (Week 3-4)
+### Phase 2: Observation Extraction (Week 3-4)
 - [ ] Claude Agent SDK + memory augmentation
-- [ ] Short-term memory (7-day TTL)
-- [ ] Conversation threading
+- [ ] Conversation-to-observation pipeline
+- [ ] 48-hour conversation TTL cleanup
 - [ ] Basic personalization (name, preferences)
 
-### Phase 3: Long-Term Learning (Week 5-8)
-- [ ] Decision pattern analysis
-- [ ] Preference inference (implicit learning)
-- [ ] Personality progression triggers
-- [ ] Trust score metrics
+### Phase 3: Context Retrieval (Week 5-6)
+- [ ] Query knowledge graph for relevant context
+- [ ] Augment prompts with observations
+- [ ] Test personalization quality
 
-### Phase 4: Trust Visualizations (Week 9-12)
-- [ ] Reasoning transparency UI
-- [ ] Fleet status dashboard
-- [ ] Market context visualizations
-- [ ] "Show your work" feature
+### Phase 4: Relationship Depth (Week 7-8)
+- [ ] Measure observation richness
+- [ ] Test organic relationship development
+- [ ] User feedback on personalization
 
 ---
 
 ## Open Technical Questions
 
-1. **Embedding dimension**: 1024 (Titan v2) vs 768 (Titan v1)? (Recommend v2 for quality)
-2. **Similarity threshold**: What cosine similarity = "relevant context"? (Recommend 0.7-0.8, A/B test)
-3. **Context window**: How many retrieved memories to include in prompt? (Recommend 5-10 top results)
-4. **Update frequency**: Real-time embedding vs batch? (Recommend async batch every 5 minutes)
-5. **Privacy**: Memory retention policy for inactive users? (Recommend 90-day deletion)
+1. **Observation granularity**: How specific should observations be? (Test with real conversations)
+2. **Context window**: How many observations to include in prompt? (Recommend 5-10 most relevant)
+3. **Extraction timing**: Real-time vs batch extraction? (Recommend async after session ends)
+4. **Privacy**: Memory retention policy for inactive users? (Recommend 90-day deletion)
+5. **User control**: Should users be able to view/edit their observations? (Recommend read-only initially)
 
 ---
 
 ## Next Steps
 
-1. **Spike task**: Prototype DynamoDB vector search with sample Star Atlas data
-   - Validate 100-200ms latency assumption
-   - Measure actual embedding costs
-   - Test cosine similarity accuracy
+1. **Implement knowledge graph schema**: Create SQLite tables (entities, observations, relations)
+   - Follow pip-by-arc-forge pattern
+   - Use better-sqlite3 for Node.js integration
 
-2. **Update ARCHITECTURE.md**: Add four-tier memory architecture diagram
+2. **Build observation extraction**: Pipeline to extract facts from conversations
+   - Use Claude to identify important observations
+   - Store with entity references
 
-3. **Update BLUEPRINT.yaml**: Add memory implementation phases
-
-4. **Cost validation**: Deploy pilot with 10 test users, measure actual AWS costs
+3. **Integrate with agent**: Augment prompts with relevant observations
+   - Query by entity type and context
+   - Test personalization quality
 
 ---
 
-**Status**: Research complete. Ready to integrate into blueprint and implementation plan.
+**Status**: Architecture defined. Ready for implementation.
 
-**Recommendation**: Proceed with DynamoDB vector store for MVP. Plan migration path to OpenSearch Serverless if we hit 1K+ users.
+**Approach**: SQLite knowledge graph (pip-by-arc-forge pattern) with organic relationship development through accumulated observations.

@@ -254,6 +254,90 @@
 
 ---
 
+## Epic 8: CITADEL Integration - Voice Access to Fleet Data
+
+**Estimated**: 37-40 days (2-3 weeks parallel) | **Status**: 🔴
+**Dependency**: CITADEL MVP APIs (read-only, no automation triggers)
+**Blueprint**: specs/archive/BLUEPRINT-feature-citadel-integration-20251202.yaml
+
+### Feature 8.1: CITADEL API Client (3 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_8_1_1 | Define TypeScript types for CITADEL API contracts | 1.5 | 1d | 🔴 |
+| task_8_1_2 | Implement CitadelClient class with retry/caching | 2.3 | 1.5d | 🔴 |
+| task_8_1_3 | Add mock API responses for offline development | 1.8 | 0.5d | 🔴 |
+
+### Feature 8.2: MCP Tool Proxy (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_8_2_1 | Configure IRIS to connect to CITADEL MCP server | 1.8 | 1d | 🔴 |
+| task_8_2_2 | Implement MCP tool wrappers with user context | 2.7 | 2d | 🔴 |
+| task_8_2_3 | Add fallback to HTTP API when MCP unavailable | 2.5 | 1d | 🔴 |
+
+### Feature 8.3: WebSocket for Real-Time Prices (5 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_8_3_1 | Implement WebSocket client for price updates | 2.7 | 2d | 🔴 |
+| task_8_3_2 | Integrate WebSocket updates into agent context | 2.3 | 1.5d | 🔴 |
+| task_8_3_3 | Add voice notification for price changes | 2.8 | 1.5d | 🔴 |
+
+### Feature 8.4: Price Query Voice Handlers (3 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_8_4_1 | "What's the price of [resource]?" handler | 1.8 | 1d | 🔴 |
+| task_8_4_2 | "Show all resource prices" handler | 2.0 | 1d | 🔴 |
+| task_8_4_3 | Price comparison queries | 2.2 | 1d | 🔴 |
+
+### Feature 8.5: Fleet Recommendation Voice Handlers (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_8_5_1 | "What should my fleet mine?" handler | 2.5 | 1.5d | 🔴 |
+| task_8_5_2 | "Best transport route from A to B" handler | 2.3 | 1.5d | 🔴 |
+| task_8_5_3 | Fleet profitability comparison | 2.2 | 1d | 🔴 |
+
+### Feature 8.6: Contextual Query Augmentation (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_8_6_1 | Retrieve user preferences from knowledge graph | 2.3 | 1.5d | 🔴 |
+| task_8_6_2 | Augment CITADEL queries with user context | 2.7 | 1.5d | 🔴 |
+| task_8_6_3 | Store CITADEL interaction outcomes | 2.5 | 1d | 🔴 |
+
+### Feature 8.7: Dashboard Components (5 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_8_7_1 | ResourcePriceTable component | 2.0 | 1.5d | 🔴 |
+| task_8_7_2 | RecommendationCard component | 2.3 | 2d | 🔴 |
+| task_8_7_3 | FleetStatusPanel component | 2.3 | 1.5d | 🔴 |
+
+### Feature 8.8: React Query Hooks (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_8_8_1 | useCitadelPrices hook | 2.5 | 1.5d | 🔴 |
+| task_8_8_2 | useCitadelRecommendations hook | 2.3 | 1.5d | 🔴 |
+| task_8_8_3 | useCitadelFleetStatus hook | 2.2 | 1d | 🔴 |
+
+### Feature 8.9: CITADEL Dashboard Page (3 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_8_9_1 | Create /dashboard/citadel route | 1.8 | 1d | 🔴 |
+| task_8_9_2 | Integrate all CITADEL components | 2.0 | 1d | 🔴 |
+| task_8_9_3 | Add navigation and breadcrumbs | 1.5 | 1d | 🔴 |
+
+### Feature 8.10: CITADEL Integration Tests (5 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_8_10_1 | Integration tests for API client | 2.5 | 2d | 🔴 |
+| task_8_10_2 | E2E tests for voice queries | **3.0** ⚠️ | 2d | 🔴 |
+| task_8_10_3 | Integration tests for WebSocket | 2.8 | 1d | 🔴 |
+
+### Feature 8.11: Integration Documentation (2 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_8_11_1 | Document CITADEL integration architecture | 1.5 | 1d | 🔴 |
+| task_8_11_2 | Create CITADEL setup guide for developers | 1.5 | 1d | 🔴 |
+
+---
+
 ## Summary
 
 | Epic | Features | Tasks | Est. Days | Status |
@@ -265,7 +349,8 @@
 | Web Application | 5 | 13 | 20 | 🔴 |
 | Deployment | 4 | 10 | 14 | 🔴 |
 | Testing | 3 | 9 | 15 | 🔴 |
-| **TOTAL** | **28** | **72** | **116** | 🔴 |
+| **CITADEL Integration** | **11** | **35** | **37-40** | 🔴 |
+| **TOTAL** | **39** | **107** | **~153** | 🔴 |
 
 ---
 

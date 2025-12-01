@@ -9,7 +9,7 @@
 **Multi-user SaaS voice-first AI agent** for Star Atlas players focused on:
 1. **Fleet monitoring & alerts** (HIGH) - Fuel, repairs, resource tracking
 2. **Economic optimization** (HIGH) - Crafting profitability, resource allocation
-3. **Voice assistant interface** (HIGH) - Cortana-like conversational experience
+3. **Voice assistant interface** (HIGH) - Halo's Cortana-inspired AI companion experience
 4. **Automated trading** (LOW) - Future consideration post-MVP
 
 **Differentiation from EvEye**:
@@ -233,7 +233,7 @@ User → WebRTC (browser) → ECS (voice service) → Whisper (STT) → Claude A
 
 **Post-MVP Memory Architecture** (when ready):
 - SQLite-based storage on VPS (cost-predictable, pip-by-arc-forge pattern)
-- Vector embeddings for semantic search
+- Knowledge graph with entities/observations/relations (NOT vector embeddings)
 - Progressive compression pipeline
 
 **Memory Types (MVP)**:
@@ -245,9 +245,9 @@ User → WebRTC (browser) → ECS (voice service) → Whisper (STT) → Claude A
 
 ## Open Questions
 
-1. **Voice UX**: Push-to-talk vs always-listening? (Recommend PTT for MVP - simpler, lower cost)
+1. **Voice UX**: Three-state toggle: Off / Push-to-Talk / Always On (ChatGPT/Grok model - can interrupt mid-response like human conversation)
 2. **Authentication**: Wallet-based (Solana) vs traditional (email)? (Recommend both - wallet for on-chain, email for notifications)
-3. **Subscription tiers**: Free tier limits? (Recommend: Free = 5 fleets, Pro = unlimited)
+3. **Subscription tiers**: TBD - plan once we know actual costs and user needs (avoid premature pricing decisions)
 4. **Market data frequency**: How often refresh prices? (Recommend: 5-min like EvEye for MVP)
 5. **Alert delivery**: Voice-only vs also push notifications/email? (Recommend: Multi-channel for MVP)
 6. **Memory retention**: How long to keep conversation history? (Recommend: 7 days short-term, indefinite long-term preferences)

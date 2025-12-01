@@ -1,0 +1,748 @@
+blueprint_type: feature
+created: 2025-12-02
+tracking_method: document  # PROGRESS.md + ISSUES.md
+parent_project: iris
+dependency_project: citadel
+
+feature_overview:
+  brief: "Integrate IRIS voice assistant with CITADEL's blockchain data layer and profitability analysis APIs to provide voice-driven access to fleet recommendations, resource prices, and mining/transport profitability calculations."
+  core_objectives:
+    - "Enable voice queries for real-time resource prices from CITADEL Decision API"
+    - "Provide voice access to fleet recommendations (mining routes, transport routes)"
+    - "Integrate CITADEL MCP tools into IRIS agent for profitability calculations"
+    - "Display CITADEL dashboard data through IRIS web interface (read-only MVP)"
+
+  mvp_scope: "Read-only voice interface to CITADEL data - no automation triggers, no transaction signing. Users can ask IRIS about prices, fleet recommendations, and profitability metrics."
+
+integration_architecture:
+  pattern: "API Client + MCP Tool Proxy"
+  data_flow: |
+    User Voice Query → IRIS Agent → CITADEL Decision API (HTTP)
+                                 ↘ CITADEL MCP Tools (FastMCP)
+                                 ↘ CITADEL WebSocket (real-time prices)
+
+    CITADEL ← Solana RPC ← Blockchain
+            ← Star Atlas SAGE SDK
+            ← Galactic Marketplace API
+
+dependency_contract:
+  citadel_provides:
+    http_endpoints:
+      - endpoint: "GET /api/dashboard/prices"
+        description: "Current resource prices (ATLAS, POLIS, all mineable resources)"
+        cache_ttl: "30s"
+        response_format: "{ resource: string, price: number, lastUpdated: string }"
+
+      - endpoint: "GET /api/dashboard/fleets/:fleetId"
+        description: "Fleet status (fuel, cargo, location, health)"
+        cache_ttl: "60s"
+        response_format: "{ fleetId, location, fuel_percent, cargo_percent, health_percent, alerts }"
+
+      - endpoint: "GET /api/recommendations/mining"
+        description: "Mining profitability recommendations for all resources"
+        cache_ttl: "5min"
+        response_format: "{ resource, profit_per_hour, roi_percent, rank }"
+
+      - endpoint: "GET /api/recommendations/transport/:fromLocation/:toLocation"
+        description: "Transport route profitability between starbases"
+        cache_ttl: "5min"
+        response_format: "{ route, cargo, profit_per_trip, time_hours, fuel_cost }"
+
+    websocket_endpoints:
+      - endpoint: "ws://citadel/ws/prices"
+        description: "Real-time price updates (subscribe to specific resources)"
+        event_format: "{ type: 'price_update', resource, price, timestamp }"
+
+    mcp_tools:
+      - tool: "citadel_calculate_mining_profit"
+        description: "Calculate profitability for mining a specific resource"
+        parameters: "{ resource: string, fleet_id?: string }"
+        returns: "{ resource, hourly_profit, daily_profit, roi_percent }"
+
+      - tool: "citadel_calculate_transport_profit"
+        description: "Calculate profitability for transport route"
+        parameters: "{ from: string, to: string, cargo: string, quantity: number }"
+        returns: "{ profit, time_hours, fuel_cost, net_profit }"
+
+      - tool: "citadel_get_resource_prices"
+        description: "Get current market prices for all resources"
+        parameters: "{}"
+        returns: "{ [resource: string]: { buy_price, sell_price, spread } }"
+
+  iris_provides:
+    - "Voice interface for natural language queries"
+    - "User preference context from SQLite knowledge graph"
+    - "Session memory for conversation continuity"
+    - "Personalized recommendations based on user fleet composition"
+
+milestones:
+  milestone_1:
+    name: "CITADEL Integration MVP"
+    timeline_weeks: "2-3"
+
+    epics:
+      epic_1:
+        name: "CITADEL API Client Integration"
+
+        feature_1_1:
+          name: "HTTP Client for CITADEL Decision API"
+          complexity:
+            composite: 2.1
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 3  # Depends on CITADEL Decision API being ready
+              uncertainty: 2
+              risk: 2
+              testing: 2
+          estimated_days: 3
+
+          task_1_1_1:
+            name: "Define TypeScript types for CITADEL API contracts"
+            description: "Create interface definitions for all CITADEL endpoints (prices, fleets, recommendations)"
+            complexity:
+              composite: 1.5
+              dimensions:
+                technical_complexity: 1
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 1
+                testing: 2
+            estimated_days: 1
+
+          task_1_1_2:
+            name: "Implement CitadelClient class with retry logic and caching"
+            description: "HTTP client with exponential backoff, response caching (respect TTLs), and error handling"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_1_1_3:
+            name: "Add mock API responses for offline development"
+            description: "Create mock data for CITADEL endpoints to enable IRIS development before CITADEL MVP is complete"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 1
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 0.5
+
+        feature_1_2:
+          name: "CITADEL MCP Tool Proxy"
+          complexity:
+            composite: 2.5
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 3
+              risk: 2
+              testing: 3
+          estimated_days: 4
+
+          task_1_2_1:
+            name: "Configure IRIS agent to connect to CITADEL MCP server"
+            description: "Add CITADEL MCP server to IRIS .mcp.json config, test connection and tool discovery"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 1
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+          task_1_2_2:
+            name: "Implement MCP tool wrappers for profitability calculations"
+            description: "Wrap CITADEL MCP tools with IRIS-specific context (user preferences, fleet IDs from knowledge graph)"
+            complexity:
+              composite: 2.7
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 3
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+          task_1_2_3:
+            name: "Add fallback to HTTP API when MCP tools unavailable"
+            description: "Graceful degradation: use Decision API if MCP server connection fails"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 3
+                risk: 3
+                testing: 3
+            estimated_days: 1
+
+        feature_1_3:
+          name: "WebSocket Integration for Real-Time Prices"
+          complexity:
+            composite: 2.8
+            dimensions:
+              technical_complexity: 3
+              scope_size: 3
+              dependencies: 3
+              uncertainty: 3
+              risk: 2
+              testing: 3
+          estimated_days: 5
+
+          task_1_3_1:
+            name: "Implement WebSocket client for CITADEL price updates"
+            description: "Subscribe to resource price events, handle reconnection, buffer updates"
+            complexity:
+              composite: 2.7
+              dimensions:
+                technical_complexity: 3
+                scope_size: 3
+                dependencies: 3
+                uncertainty: 3
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+          task_1_3_2:
+            name: "Integrate WebSocket updates into IRIS agent context"
+            description: "Make real-time prices available to agent during conversation (update session cache)"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 1.5
+
+          task_1_3_3:
+            name: "Add voice notification for significant price changes"
+            description: "Proactive alerts when watched resources exceed price change threshold (opt-in)"
+            complexity:
+              composite: 2.8
+              dimensions:
+                technical_complexity: 3
+                scope_size: 3
+                dependencies: 2
+                uncertainty: 3
+                risk: 2
+                testing: 3
+            estimated_days: 1.5
+
+      epic_2:
+        name: "Voice Query Handlers for CITADEL Data"
+
+        feature_2_1:
+          name: "Price Query Voice Handlers"
+          complexity:
+            composite: 2.0
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 1
+              testing: 2
+          estimated_days: 3
+
+          task_2_1_1:
+            name: "Implement 'What's the price of [resource]?' handler"
+            description: "Parse resource name from voice query, fetch from CITADEL, format voice response"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 1
+                testing: 2
+            estimated_days: 1
+
+          task_2_1_2:
+            name: "Implement 'Show me all resource prices' handler"
+            description: "Fetch all prices, format as table or voice summary (user preference)"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 1
+                testing: 2
+            estimated_days: 1
+
+          task_2_1_3:
+            name: "Implement price comparison queries (e.g., 'Is hydrogen cheaper than carbon?')"
+            description: "Multi-resource price comparison with natural language response"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 3
+                risk: 1
+                testing: 2
+            estimated_days: 1
+
+        feature_2_2:
+          name: "Fleet Recommendation Voice Handlers"
+          complexity:
+            composite: 2.3
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 2
+              risk: 2
+              testing: 2
+          estimated_days: 4
+
+          task_2_2_1:
+            name: "Implement 'What should my fleet mine?' handler"
+            description: "Fetch mining recommendations from CITADEL, personalize based on user fleet composition"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_2_2_2:
+            name: "Implement 'Best transport route from [A] to [B]' handler"
+            description: "Fetch transport recommendations, include fuel costs and time estimates in voice response"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_2_2_3:
+            name: "Implement fleet profitability comparison queries"
+            description: "Compare multiple recommendations, rank by ROI, present top 3 options via voice"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 1
+                testing: 3
+            estimated_days: 1
+
+        feature_2_3:
+          name: "Contextual Query Augmentation"
+          complexity:
+            composite: 2.6
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 3
+              risk: 2
+              testing: 3
+          estimated_days: 4
+
+          task_2_3_1:
+            name: "Retrieve user fleet preferences from SQLite knowledge graph"
+            description: "Query entities/observations for user's fleet composition, risk tolerance, favorite resources"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 1.5
+
+          task_2_3_2:
+            name: "Augment CITADEL queries with user context"
+            description: "Add fleet_id, preferred_resources, risk_tolerance to API requests automatically"
+            complexity:
+              composite: 2.7
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 3
+                risk: 2
+                testing: 3
+            estimated_days: 1.5
+
+          task_2_3_3:
+            name: "Store CITADEL interaction outcomes in knowledge graph"
+            description: "Save observations like 'User followed mining recommendation for Hydrogen on 2025-12-02'"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 3
+                risk: 2
+                testing: 3
+            estimated_days: 1
+
+      epic_3:
+        name: "Web Interface for CITADEL Dashboard Data"
+
+        feature_3_1:
+          name: "Dashboard Data Display Components"
+          complexity:
+            composite: 2.2
+            dimensions:
+              technical_complexity: 2
+              scope_size: 3
+              dependencies: 2
+              uncertainty: 2
+              risk: 1
+              testing: 2
+          estimated_days: 5
+
+          task_3_1_1:
+            name: "Create ResourcePriceTable component"
+            description: "React component displaying all resource prices in sortable table (real-time via WebSocket)"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 1
+                testing: 2
+            estimated_days: 1.5
+
+          task_3_1_2:
+            name: "Create RecommendationCard component"
+            description: "Display mining/transport recommendations with ROI, profit estimates, visual indicators"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 2
+                scope_size: 3
+                dependencies: 2
+                uncertainty: 2
+                risk: 1
+                testing: 2
+            estimated_days: 2
+
+          task_3_1_3:
+            name: "Create FleetStatusPanel component"
+            description: "Show fleet fuel/cargo/health with visual gauges and alert badges"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 2
+                scope_size: 3
+                dependencies: 2
+                uncertainty: 2
+                risk: 1
+                testing: 2
+            estimated_days: 1.5
+
+        feature_3_2:
+          name: "CITADEL Data Hooks (React Query)"
+          complexity:
+            composite: 2.4
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 2
+              risk: 2
+              testing: 3
+          estimated_days: 4
+
+          task_3_2_1:
+            name: "Implement useCitadelPrices hook"
+            description: "React Query hook for fetching/caching resource prices, auto-refresh on WebSocket event"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 1.5
+
+          task_3_2_2:
+            name: "Implement useCitadelRecommendations hook"
+            description: "Fetch mining/transport recommendations with 5-min cache, invalidate on user request"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 1.5
+
+          task_3_2_3:
+            name: "Implement useCitadelFleetStatus hook"
+            description: "Fetch fleet status with 60s cache, show loading/error states"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 1
+
+        feature_3_3:
+          name: "CITADEL Dashboard Page"
+          complexity:
+            composite: 2.0
+            dimensions:
+              technical_complexity: 2
+              scope_size: 3
+              dependencies: 2
+              uncertainty: 1
+              risk: 1
+              testing: 2
+          estimated_days: 3
+
+          task_3_3_1:
+            name: "Create /dashboard/citadel route and page layout"
+            description: "React Router route with grid layout for price table, recommendations, fleet panels"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 1
+                testing: 2
+            estimated_days: 1
+
+          task_3_3_2:
+            name: "Integrate all CITADEL components into dashboard"
+            description: "Compose ResourcePriceTable, RecommendationCard, FleetStatusPanel with data hooks"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 3
+                dependencies: 2
+                uncertainty: 1
+                risk: 1
+                testing: 2
+            estimated_days: 1
+
+          task_3_3_3:
+            name: "Add dashboard navigation link and breadcrumbs"
+            description: "Update IRIS sidebar/nav to include CITADEL dashboard link, add breadcrumb trail"
+            complexity:
+              composite: 1.5
+              dimensions:
+                technical_complexity: 1
+                scope_size: 2
+                dependencies: 1
+                uncertainty: 1
+                risk: 1
+                testing: 2
+            estimated_days: 1
+
+      epic_4:
+        name: "Integration Testing and Documentation"
+
+        feature_4_1:
+          name: "End-to-End Integration Tests"
+          complexity:
+            composite: 2.7
+            dimensions:
+              technical_complexity: 3
+              scope_size: 3
+              dependencies: 4  # Requires both IRIS and CITADEL running
+              uncertainty: 3
+              risk: 3
+              testing: 3
+          estimated_days: 5
+
+          task_4_1_1:
+            name: "Write integration tests for CITADEL API client"
+            description: "Test all HTTP endpoints with mock server, verify retries, caching, error handling"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 4
+            estimated_days: 2
+
+          task_4_1_2:
+            name: "Write E2E tests for voice queries"
+            description: "Playwright tests: record voice query → verify CITADEL API called → check voice response"
+            complexity:
+              composite: 3.0
+              dimensions:
+                technical_complexity: 4
+                scope_size: 3
+                dependencies: 4
+                uncertainty: 3
+                risk: 3
+                testing: 3
+            estimated_days: 2
+            needs_decomposition: true
+            decomposition_reason: "High technical complexity (4.0) and dependencies (4.0) - requires both IRIS and CITADEL running, voice input simulation, API mocking"
+
+          task_4_1_3:
+            name: "Write integration tests for WebSocket price updates"
+            description: "Test price event subscription, reconnection, UI update propagation"
+            complexity:
+              composite: 2.8
+              dimensions:
+                technical_complexity: 3
+                scope_size: 3
+                dependencies: 3
+                uncertainty: 3
+                risk: 3
+                testing: 3
+            estimated_days: 1
+
+        feature_4_2:
+          name: "Integration Documentation"
+          complexity:
+            composite: 1.5
+            dimensions:
+              technical_complexity: 1
+              scope_size: 2
+              dependencies: 1
+              uncertainty: 1
+              risk: 1
+              testing: 2
+          estimated_days: 2
+
+          task_4_2_1:
+            name: "Document CITADEL integration architecture"
+            description: "Add section to IRIS ARCHITECTURE.md explaining CITADEL data flow, API contracts, MCP tools"
+            complexity:
+              composite: 1.5
+              dimensions:
+                technical_complexity: 1
+                scope_size: 2
+                dependencies: 1
+                uncertainty: 1
+                risk: 1
+                testing: 2
+            estimated_days: 1
+
+          task_4_2_2:
+            name: "Create CITADEL setup guide for developers"
+            description: "README section: how to run IRIS with CITADEL (local dev, mock vs real APIs)"
+            complexity:
+              composite: 1.5
+              dimensions:
+                technical_complexity: 1
+                scope_size: 2
+                dependencies: 1
+                uncertainty: 1
+                risk: 1
+                testing: 2
+            estimated_days: 1
+
+risks:
+  - id: risk_1
+    description: "CITADEL Decision API not ready when IRIS integration development starts"
+    likelihood: "High"
+    impact: "High"
+    mitigation: "Develop against mock API responses (task_1_1_3), define API contracts in advance, coordinate timeline with CITADEL team"
+
+  - id: risk_2
+    description: "CITADEL MCP server incompatibility with IRIS MCP client"
+    likelihood: "Medium"
+    impact: "Medium"
+    mitigation: "Test MCP tool discovery early, use FastMCP framework for both (compatible), implement HTTP API fallback"
+
+  - id: risk_3
+    description: "WebSocket connection reliability issues (dropped connections, high latency)"
+    likelihood: "Medium"
+    impact: "Medium"
+    mitigation: "Implement automatic reconnection with exponential backoff, buffer price updates, fall back to HTTP polling if WebSocket unavailable"
+
+  - id: risk_4
+    description: "Voice latency budget exceeded when calling CITADEL APIs during conversation"
+    likelihood: "Medium"
+    impact: "High"
+    mitigation: "Aggressive caching (30s-5min TTLs), parallel API calls where possible, prefetch common queries (e.g., all prices on dashboard load)"
+
+  - id: risk_5
+    description: "User confusion between IRIS and CITADEL features (unclear which system provides what)"
+    likelihood: "Medium"
+    impact: "Low"
+    mitigation: "Clear UI labeling ('Powered by CITADEL'), documentation explaining integration, voice responses mention data source when relevant"
+
+deployment_notes:
+  - "CITADEL and IRIS will run as separate services (different repos, possibly different servers)"
+  - "CITADEL Decision API must be network-accessible from IRIS VPS (HTTP/HTTPS endpoint)"
+  - "CITADEL MCP server must be accessible from IRIS agent process (local socket or HTTP)"
+  - "Environment variables needed: CITADEL_API_URL, CITADEL_WS_URL, CITADEL_MCP_HOST"
+  - "IRIS will cache CITADEL responses locally (SQLite or Redis) to reduce API load"
+
+future_enhancements:
+  - "Voice-triggered automation: 'Start mining hydrogen on my behalf' (requires CITADEL automation API)"
+  - "Push notifications for fleet alerts (CITADEL sends webhooks to IRIS)"
+  - "Historical profitability charts (CITADEL provides time-series data)"
+  - "Multi-fleet coordination: 'Which fleet should mine and which should transport?'"
+  - "CITADEL recommendation quality feedback loop (IRIS learns which recommendations user follows)"
+
+complexity_summary:
+  total_features: 11
+  total_tasks: 35
+  average_task_complexity: 2.2
+  flagged_for_decomposition: 1  # task_4_1_2
+  flagged_for_spike: 0
+  estimated_total_days: "37-40 days"
+  estimated_weeks: "2-3 weeks (with parallel development)"
+
+notes:
+  - "This blueprint assumes CITADEL MVP APIs will be available within 2-4 weeks"
+  - "Mock API development (task_1_1_3) unblocks IRIS development independently"
+  - "Voice handlers (Epic 2) can be developed in parallel with web components (Epic 3)"
+  - "Integration testing (Epic 4) requires both systems running (staging environment recommended)"
+  - "All CITADEL data is read-only in MVP - no automation triggers, no transaction signing"
