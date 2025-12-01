@@ -1,4 +1,4 @@
-# Contributing to Star Atlas Agent
+# Contributing to IRIS
 
 > **Purpose**: Workflow guide for development
 > **Lifecycle**: Stable (update when processes change)
@@ -13,13 +13,13 @@
 
 ```bash
 # From main repo directory
-cd /home/x-forge/repos/star-atlas-agent
+cd /home/x-forge/repos/iris
 
 # Create worktree for new feature
-git worktree add ../star-atlas-agent--mcp-server feature/mcp-server
+git worktree add ../iris--mcp-server feature/mcp-server
 
 # Work in the isolated directory
-cd ../star-atlas-agent--mcp-server
+cd ../iris--mcp-server
 
 # Now you can work without affecting main repo
 pnpm install
@@ -45,8 +45,8 @@ git push -u origin feature/mcp-server
 gh pr create --base main --title "feat: MCP server foundation"
 
 # After PR merged, clean up
-cd /home/x-forge/repos/star-atlas-agent
-git worktree remove ../star-atlas-agent--mcp-server
+cd /home/x-forge/repos/iris
+git worktree remove ../iris--mcp-server
 git branch -d feature/mcp-server  # if merged
 ```
 
@@ -55,9 +55,9 @@ git branch -d feature/mcp-server  # if merged
 Multiple Claude Code agents can work simultaneously:
 
 ```
-Terminal 1: /home/x-forge/repos/star-atlas-agent (main branch)
-Terminal 2: /home/x-forge/repos/star-atlas-agent--mcp-server (feature/mcp-server)
-Terminal 3: /home/x-forge/repos/star-atlas-agent--voice-service (feature/voice-service)
+Terminal 1: /home/x-forge/repos/iris (main branch)
+Terminal 2: /home/x-forge/repos/iris--mcp-server (feature/mcp-server)
+Terminal 3: /home/x-forge/repos/iris--voice-service (feature/voice-service)
 ```
 
 Each worktree is fully isolated - no checkout conflicts.
@@ -71,10 +71,10 @@ Each worktree is fully isolated - no checkout conflicts.
 git worktree list
 
 # Create worktree
-git worktree add ../star-atlas-agent--<feature> feature/<feature>
+git worktree add ../iris--<feature> feature/<feature>
 
 # Remove worktree (after PR merged)
-git worktree remove ../star-atlas-agent--<feature>
+git worktree remove ../iris--<feature>
 
 # Prune stale worktrees
 git worktree prune

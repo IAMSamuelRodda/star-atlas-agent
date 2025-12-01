@@ -1,6 +1,6 @@
-# Issues & Flagged Items
+# IRIS - Issues & Flagged Items
 
-> **Purpose**: Track items needing attention before/during implementation
+> **Purpose**: Track items needing attention before/during IRIS implementation
 > **Generated from**: specs/BLUEPRINT-project-staratlas-20251201.yaml
 
 **Last Updated**: 2025-12-01

@@ -1,5 +1,6 @@
-# Star Atlas Agent - CLAUDE.md
+# IRIS - CLAUDE.md
 
+> **Voice-first AI companion for Star Atlas** | *by Arc Forge*
 > **Purpose**: Minimal navigation hub for AI agents (pointers to detailed documentation)
 > **Lifecycle**: Living (target: ~100 lines max)
 
@@ -52,13 +53,13 @@ See `ARCHITECTURE.md` for complete details.
 **Git Worktrees** (NOT branch switching):
 ```bash
 # Create worktree for feature work
-git worktree add ../star-atlas-agent--feature-x feature-x
+git worktree add ../iris--feature-x feature-x
 
 # Work in isolated directory (no checkout conflicts)
-cd ../star-atlas-agent--feature-x
+cd ../iris--feature-x
 
 # When done, remove worktree
-git worktree remove ../star-atlas-agent--feature-x
+git worktree remove ../iris--feature-x
 ```
 
 **Why worktrees?** Multiple Claude Code agents on same machine cause conflicts when switching branches. Worktrees provide isolated directories sharing the same `.git` objects.
@@ -69,7 +70,7 @@ git worktree remove ../star-atlas-agent--feature-x
 
 ## 🔗 External Links
 
-- **Repository**: https://github.com/IAMSamuelRodda/star-atlas-agent
+- **Repository**: https://github.com/IAMSamuelRodda/iris
 - **Star Atlas Docs**: https://build.staratlas.com/
 - **SAGE API**: https://www.npmjs.com/package/@staratlas/sage
 - **Claude Agent SDK**: https://docs.claude.com/en/api/agent-sdk/overview

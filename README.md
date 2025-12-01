@@ -1,9 +1,10 @@
-# Star Atlas Agent
+# IRIS
 
-> **Purpose**: Project introduction and quick start guide
-> **Lifecycle**: Stable (update when fundamentals change)
+> **Voice-first AI companion for Star Atlas** | *by Arc Forge*
 
-Voice-first AI agent for Star Atlas fleet monitoring, economic optimization, and gameplay assistance.
+*IRIS - Intelligent Reconnaissance & Information System*
+
+In Greek mythology, Iris was the goddess of the rainbow and messenger of the gods. In Star Atlas, IRIS is your intelligent companion - bridging you to fleet status, market data, and the pulse of the metaverse through natural conversation.
 
 **Current Work**: See [`STATUS.md`](./STATUS.md)
 
@@ -11,46 +12,44 @@ Voice-first AI agent for Star Atlas fleet monitoring, economic optimization, and
 
 ## Overview
 
-Star Atlas Agent is a multi-user SaaS platform that provides intelligent, voice-driven assistance for Star Atlas players. Monitor your fleet status, optimize crafting economics, and get AI-powered gameplay recommendations through a natural conversational interface.
+IRIS is a voice-first AI assistant for Star Atlas players. Monitor your fleet, optimize your economy, and get AI-powered recommendations through natural conversation.
 
 **Key Features:**
-- 🎙️ **Voice-First Interface** - Cortana-like experience with <500ms response time
-- 🚀 **Fleet Monitoring** - Real-time alerts for fuel, repairs, and resource needs
-- 💰 **Economic Optimization** - Crafting ROI analysis and resource allocation
-- 🔗 **Blockchain Integration** - WebSocket subscriptions to Solana for real-time data
-- 🔐 **Secure Transactions** - Explicit wallet approval required (never auto-sign)
-
+- **Voice-First Interface** - Push-to-talk with <500ms response time
+- **Fleet Monitoring** - Real-time alerts for fuel, repairs, and resources
+- **Economic Optimization** - Crafting ROI analysis and market insights
+- **Blockchain Integration** - Live Solana data via WebSocket subscriptions
+- **Secure Transactions** - Explicit wallet approval required (never auto-sign)
 
 ---
 
 ## Quick Start
 
-**For Developers:**
 ```bash
 # Clone and setup
-git clone https://github.com/IAMSamuelRodda/star-atlas-agent.git
-cd star-atlas-agent
+git clone https://github.com/IAMSamuelRodda/iris.git
+cd iris
 pnpm install
 
-# Start all services
+# Start development
 pnpm dev
 ```
 
-**For AI Agents:**
-See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for workflow.
+**For AI Agents:** See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for worktree workflow.
 
 ---
 
 ## Architecture
 
 **Tech Stack:**
-- Frontend: React 18 + TypeScript + Vite
-- Backend: AWS Lambda + API Gateway (serverless)
-- Database: DynamoDB (NoSQL)
-- Voice: WebRTC + OpenAI Whisper + ElevenLabs
-- Infrastructure: AWS (Free Tier optimized, <$10/month)
+- **Frontend**: React 18 + TypeScript + Vite
+- **Backend**: Node.js on Digital Ocean VPS
+- **Database**: SQLite (pip-by-arc-forge pattern)
+- **Voice**: Chatterbox (self-hosted STT/TTS)
+- **Agent**: Claude Agent SDK with MCP tools
+- **Cost**: $0/month incremental (existing VPS)
 
-**Pattern**: Event-driven microservices with voice service, agent core, MCP server, and web app.
+**Pattern**: Vertical slice architecture for AI-assisted development.
 
 See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for complete details.
 
@@ -58,37 +57,29 @@ See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for complete details.
 
 ## Documentation
 
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) - System architecture, database schema, ADRs
-- [`STATUS.md`](./STATUS.md) - Current work, known issues
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) - Workflow, progress tracking
-- [`DEVELOPMENT.md`](./DEVELOPMENT.md) - Git workflow, CI/CD, testing
-- [`CHANGELOG.md`](./CHANGELOG.md) - Release history
-- [`docs/planning-session-2025-11-12.md`](./docs/planning-session-2025-11-12.md) - Vision & constraints
+| Document | Purpose |
+|----------|---------|
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | System design, database schema, ADRs |
+| [`STATUS.md`](./STATUS.md) | Current work, blockers |
+| [`PROGRESS.md`](./PROGRESS.md) | Task tracking (72 tasks) |
+| [`ISSUES.md`](./ISSUES.md) | Flagged items, risks |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Git worktree workflow |
 
 ---
 
-## Testing
+## Development
+
+**Git Workflow**: Worktrees for parallel agent work (NOT branch switching)
 
 ```bash
-# All tests
-pnpm test
+# Create worktree for feature
+git worktree add ../iris--mcp-server feature/mcp-server
+cd ../iris--mcp-server
 
-# Specific package
-pnpm --filter mcp-staratlas-server test
-
-# E2E tests (requires test wallet)
-pnpm test:e2e
+# Work in isolation, then PR to main
 ```
 
-See [`DEVELOPMENT.md`](./DEVELOPMENT.md) for complete testing setup.
-
----
-
-## Contributing
-
-See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for workflow guide and best practices.
-
-**Branch strategy**: `feature/* → dev → main` (three-tier with aggressive branch protection)
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for details.
 
 ---
 
@@ -98,4 +89,4 @@ MIT
 
 ---
 
-**Last Updated**: 2025-11-12
+**Last Updated**: 2025-12-01

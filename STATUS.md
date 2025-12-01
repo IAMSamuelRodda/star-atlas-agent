@@ -1,4 +1,4 @@
-# Project Status
+# IRIS - Project Status
 
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)

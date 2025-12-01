@@ -1,6 +1,6 @@
-# Progress Tracking
+# IRIS - Progress Tracking
 
-> **Purpose**: Task tracking for MVP development
+> **Purpose**: Task tracking for IRIS MVP development
 > **Tracking Method**: Document-based (no GitHub Projects)
 > **Generated from**: specs/BLUEPRINT-project-staratlas-20251201.yaml
 
