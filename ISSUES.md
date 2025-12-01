@@ -157,6 +157,115 @@ duration: 3-5 days
 
 ---
 
+## CITADEL Integration (Epic 8)
+
+### task_8_10_2: E2E tests for voice queries
+**Complexity**: 3.0 | **Epic**: CITADEL Integration
+
+**Issue**: High technical complexity (4.0) and dependencies (4.0) - requires both IRIS and CITADEL running.
+
+**Why flagged**:
+- Playwright tests need to simulate voice input
+- Requires CITADEL API running or mocked
+- Complex assertion chain: voice → agent → CITADEL API → response
+
+**Suggested breakdown**:
+1. Mock CITADEL API responses
+2. Test voice input simulation separately
+3. Integration test voice → agent flow
+4. Full E2E with mock CITADEL
+
+**Status**: 🔴 Not started
+
+---
+
+### CITADEL ↔ IRIS Coordination Notes
+
+**Integration Contract** (defined in blueprint):
+```
+CITADEL Provides:
+├── GET /api/dashboard/prices (30s cache)
+├── GET /api/dashboard/fleets/:fleetId (60s cache)
+├── GET /api/recommendations/mining (5min cache)
+├── GET /api/recommendations/transport/:from/:to (5min cache)
+├── WebSocket ws://citadel/ws/prices
+└── MCP Tools: citadel_calculate_*, citadel_get_*
+
+IRIS Provides:
+├── Voice interface
+├── User preferences from knowledge graph
+└── Session context
+```
+
+**Parallel Development Strategy**:
+- IRIS can start immediately with mock APIs (task_8_1_3)
+- CITADEL Decision API priority: /api/dashboard/prices first
+- Integration testing blocked until both systems have staging
+
+**Risks**:
+1. **CITADEL APIs not ready** → Mitigation: Mock responses unblock IRIS
+2. **MCP incompatibility** → Mitigation: HTTP API fallback
+3. **Voice latency budget** → Mitigation: Aggressive caching (30s-5min TTLs)
+
+---
+
+## Aspirational Features (from CITADEL)
+
+> **Note**: These ML/RL features were originally scoped for CITADEL but moved to IRIS since IRIS is the "intelligent assistant" layer. CITADEL provides reliable data; IRIS provides intelligence.
+
+### ASP-001: Price Prediction Model
+**Type**: Machine Learning | **Priority**: Future
+**Origin**: CITADEL Epic 6 (removed from scope)
+
+**Concept**: Time-series forecasting (ARIMA, LSTM, Prophet) for Star Atlas resource prices.
+
+**Why IRIS (not CITADEL)**:
+- Predictions are recommendations, not raw data
+- IRIS provides intelligent insights; CITADEL provides facts
+- Can leverage CITADEL's historical data API
+
+**Prerequisites**:
+- CITADEL Milestone 2 (TimescaleDB historical data)
+- Sufficient price history (~90 days minimum)
+- Spike to assess if market has predictable patterns
+
+**Rough scope**:
+1. Feature engineering from CITADEL historical API
+2. Model training pipeline (Python/scikit-learn)
+3. Prediction endpoint for IRIS agent to consume
+4. Confidence scoring and fallback to heuristics
+
+**Status**: 🔮 Aspirational (post-MVP)
+
+---
+
+### ASP-002: Automated Strategy Optimizer (RL Agent)
+**Type**: Reinforcement Learning | **Priority**: Future
+**Origin**: CITADEL Epic 6 (removed from scope)
+
+**Concept**: RL agent that learns optimal fleet allocation and operation strategies.
+
+**Why IRIS (not CITADEL)**:
+- Strategy is intelligence, not automation
+- IRIS is the "brain"; CITADEL is the "hands"
+- Agent can suggest to user; user decides to execute
+
+**Prerequisites**:
+- ASP-001 working (price predictions inform rewards)
+- CITADEL profitability calculators stable
+- Environment simulator for safe training (no real fleets)
+
+**Rough scope**:
+1. Design state/action/reward spaces
+2. Build simulator using CITADEL APIs
+3. Train with Stable-Baselines3 (DQN or PPO)
+4. Shadow mode: suggest but don't execute
+5. User approval gate before any real actions
+
+**Status**: 🔮 Aspirational (post-MVP, post ASP-001)
+
+---
+
 ## Action Items
 
 1. [ ] **Create spike blueprint** for Chatterbox integration
@@ -164,6 +273,9 @@ duration: 3-5 days
 3. [ ] **Decompose task_1_3_3** (subscribeToFleetUpdates) before implementation
 4. [ ] **Decompose task_4_3_3** (latency monitoring) before implementation
 5. [ ] **Set up monitoring** for external API availability
+6. [ ] **Coordinate with CITADEL** on API timeline and contract validation
+7. [ ] **Create mock API** responses for CITADEL endpoints (task_8_1_3)
+8. [ ] **Spike ASP-001** after CITADEL historical data available (assess prediction feasibility)
 
 ---
 
