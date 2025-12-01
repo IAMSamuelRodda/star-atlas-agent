@@ -1,6 +1,6 @@
 # DynamoDB Tables Configuration
 
-# Users Table - User profiles, authentication, relationship progression
+# Users Table - User profiles and authentication
 module "users_table" {
   source = "./modules/dynamodb-table"
 

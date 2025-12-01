@@ -223,39 +223,23 @@ User → WebRTC (browser) → ECS (voice service) → Whisper (STT) → Claude A
 
 ## Critical New Requirements (Added 2025-11-12)
 
-### Persistent Memory & Personalization
+### Persistent Memory (Deferred to Post-MVP)
 
-**Vision**: Agent as colleague → partner → friend (relationship progression)
+**Note**: Complex personalization features (personality progression, trust-building visualizations) are deferred until we have a robust, efficient memory system in place.
 
-**Requirements**:
-1. **Conversation Memory**: Remember past interactions, user preferences, play style
-2. **Learning System**: Adapt to user's decision-making patterns over time
-3. **Trust Building**: Show reasoning via data visualizations (not primary feature)
-4. **Personalized Experience**: Tailor recommendations based on user history
+**MVP Focus**:
+1. **Basic Conversation Memory**: Remember user preferences and fleet configurations
+2. **Simple Context**: Store recent interactions for continuity
 
-**Implementation Strategy**:
-- **DynamoDB as Vector Store**: AWS guidance project for low-cost RAG (<50K embeddings)
-- **Cost**: ~$29/month for 200 documents + 6 queries/hour (under budget with optimization)
-- **Performance**: 25K-30K embeddings = 100-200ms query latency (acceptable)
-- **Fallback**: Upgrade to OpenSearch Serverless if >50K embeddings needed
+**Post-MVP Memory Architecture** (when ready):
+- SQLite-based storage on VPS (cost-predictable, pip-by-arc-forge pattern)
+- Vector embeddings for semantic search
+- Progressive compression pipeline
 
-**Data Visualization for Trust**:
-- "Why I'm recommending this": Show agent's logic visually
-- EvEye-level data detail available, but presented as reasoning transparency
-- NOT primary UI (voice is primary), but available when user asks "why?"
-
-**Architecture Addition**:
-```
-User Voice/Text → Agent Core → Vector Search (DynamoDB) → Personalized Context
-                      ↓                                              ↓
-                  Claude Agent SDK ← Memory-augmented prompts ← User history embeddings
-```
-
-**Memory Types**:
+**Memory Types (MVP)**:
 1. **Session memory**: Current conversation (in-memory)
-2. **Short-term memory**: Recent interactions (DynamoDB, 7-day TTL)
-3. **Long-term memory**: User preferences, patterns (DynamoDB + vector embeddings)
-4. **Semantic memory**: Game knowledge, strategies (pre-loaded embeddings)
+2. **Short-term memory**: Recent interactions (SQLite, 7-day TTL)
+3. **Long-term memory**: User preferences (SQLite, structured data)
 
 ---
 
@@ -267,7 +251,6 @@ User Voice/Text → Agent Core → Vector Search (DynamoDB) → Personalized Con
 4. **Market data frequency**: How often refresh prices? (Recommend: 5-min like EvEye for MVP)
 5. **Alert delivery**: Voice-only vs also push notifications/email? (Recommend: Multi-channel for MVP)
 6. **Memory retention**: How long to keep conversation history? (Recommend: 7 days short-term, indefinite long-term preferences)
-7. **Visualization depth**: What level of EvEye data detail to show? (Recommend: Start with fleet status, expand based on user feedback)
 
 **Decision needed**: Should we resolve these now or during blueprint creation?
 

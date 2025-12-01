@@ -1,131 +1,96 @@
 # Contributing to Star Atlas Agent
 
-> **Purpose**: Workflow guide and progress tracking
+> **Purpose**: Workflow guide for development
 > **Lifecycle**: Stable (update when processes change)
-
-> **Technical setup**: See `DEVELOPMENT.md` for git workflow, pre-commit checklist, CI/CD
 
 ---
 
-## Quick Start
+## Git Workflow: Worktrees (NOT Branch Switching)
+
+**Why worktrees?** Multiple Claude Code agents on the same machine cause conflicts when switching branches. A Git repo has one HEAD - multiple terminals switching branches corrupts state. Worktrees provide isolated directories sharing the same `.git` objects.
+
+### Start Feature Work
 
 ```bash
-git clone https://github.com/IAMSamuelRodda/star-atlas-agent.git
-cd star-atlas-agent
+# From main repo directory
+cd /home/x-forge/repos/star-atlas-agent
+
+# Create worktree for new feature
+git worktree add ../star-atlas-agent--mcp-server feature/mcp-server
+
+# Work in the isolated directory
+cd ../star-atlas-agent--mcp-server
+
+# Now you can work without affecting main repo
 pnpm install
 pnpm dev
 ```
 
-See [`DEVELOPMENT.md`](./DEVELOPMENT.md) for complete setup.
-
----
-
-## Definition of Done
-
-### Feature
-- [ ] Implemented and tested
-- [ ] Tests passing
-- [ ] Docs updated
-- [ ] Issue linked (`Closes #N`)
-- [ ] PR approved ’ merged to dev
-
-### Bug Fix
-- [ ] Root cause documented
-- [ ] Reproduction test written
-- [ ] Fix implemented
-- [ ] Test passing
-- [ ] Issue updated
-
-### Spike
-- [ ] Research questions answered
-- [ ] Options evaluated
-- [ ] Recommendation documented
-- [ ] Findings in ARCHITECTURE.md or docs/
-
----
-
-## Progress Tracking
-
-**Tool**: GitHub Issues + Projects
-
-**Hierarchy**: Epic (Milestone) ’ Feature (Issue) ’ Task (Sub-issue)
-
-**Labels**:
-- Type: `epic`, `feature`, `task`, `bug`, `spike`
-- Status: `pending`, `in-progress`, `completed`, `blocked`
-- Priority: `critical`, `high`, `medium`, `low`
-
-**Commands**:
-```bash
-# Start work
-gh issue edit <N> --add-label "status: in-progress"
-
-# Mark blocked
-gh issue edit <N> --add-label "status: blocked"
-gh issue comment <N> --body "Blocked by #<other-issue>"
-
-# Complete
-# (Automatic via "Closes #N" in commit message)
-```
-
----
-
-## Workflow
-
-### Start Work
-```bash
-git checkout dev
-git pull origin dev
-git checkout -b feature/my-feature
-
-gh issue edit <N> --add-label "status: in-progress"
-```
-
 ### During Work
+
 ```bash
-git commit -m "feat: add feature
+# Commit as normal (in worktree directory)
+git add .
+git commit -m "feat: add MCP server foundation
 
 Relates to #42"
 
-git push
+git push -u origin feature/mcp-server
 ```
 
 ### Complete Work
+
 ```bash
-git commit -m "feat: complete feature
+# Create PR from worktree
+gh pr create --base main --title "feat: MCP server foundation"
 
-Closes #42"
-
-git push
-gh pr create --base dev --head feature/my-feature
-
-#   MUST target dev branch, NOT main
+# After PR merged, clean up
+cd /home/x-forge/repos/star-atlas-agent
+git worktree remove ../star-atlas-agent--mcp-server
+git branch -d feature/mcp-server  # if merged
 ```
 
-### Release to Production
-```bash
-# After staging validation
-gh pr create --base main --head dev --title "Release v0.2.0"
+### Parallel Agent Work
 
-#  ONLY way to merge to main
+Multiple Claude Code agents can work simultaneously:
+
+```
+Terminal 1: /home/x-forge/repos/star-atlas-agent (main branch)
+Terminal 2: /home/x-forge/repos/star-atlas-agent--mcp-server (feature/mcp-server)
+Terminal 3: /home/x-forge/repos/star-atlas-agent--voice-service (feature/voice-service)
+```
+
+Each worktree is fully isolated - no checkout conflicts.
+
+---
+
+## Quick Reference
+
+```bash
+# List active worktrees
+git worktree list
+
+# Create worktree
+git worktree add ../star-atlas-agent--<feature> feature/<feature>
+
+# Remove worktree (after PR merged)
+git worktree remove ../star-atlas-agent--<feature>
+
+# Prune stale worktrees
+git worktree prune
 ```
 
 ---
 
-## Git Branching
-
-**Strategy**: Three-tier with branch protection
+## Branch Strategy (Simple)
 
 ```
-feature/* ’ dev (staging) ’ main (production)
+feature/* --> main (direct PRs)
 ```
 
-**Rules**:
-- Ô main ONLY accepts PRs from dev
-- Ô dev ONLY accepts PRs from feature/fix/spike branches
-- Ô No direct commits to dev or main
-
-See [`DEVELOPMENT.md`](./DEVELOPMENT.md) for complete workflow.
+- **main**: Production-ready code
+- **feature/***: Development work (via worktrees)
+- No dev/staging branch for now (keep it simple)
 
 ---
 
@@ -133,12 +98,11 @@ See [`DEVELOPMENT.md`](./DEVELOPMENT.md) for complete workflow.
 
 **Pattern**: `<type>: <description>`
 
-**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+**Types**: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 
 **Issue Linking** (REQUIRED):
 - `Closes #42` - Closes on merge
 - `Relates to #42` - References only
-- `Fixes #42` - Same as Closes
 
 **Example**:
 ```
@@ -151,15 +115,36 @@ Closes #42
 
 ---
 
-## Best Practices
+## Progress Tracking
 
-1. Read `STATUS.md` before starting
-2. Update issue status when working
-3. Commit frequently
-4. Link commits to issues
-5. Run pre-commit checklist (see DEVELOPMENT.md)
-6. Update docs with code
+**Tool**: GitHub Issues (simple)
+
+**Labels**:
+- Type: `feature`, `bug`, `spike`
+- Status: `in-progress`, `blocked` (only when needed)
+
+**Start work**:
+```bash
+gh issue edit <N> --add-label "in-progress"
+```
+
+**Complete work**: Use `Closes #N` in commit message (auto-closes)
 
 ---
 
-**Last Updated**: 2025-11-12
+## Definition of Done
+
+### Feature
+- [ ] Implemented
+- [ ] Tests passing (when applicable)
+- [ ] Issue linked (`Closes #N`)
+- [ ] PR merged to main
+
+### Bug Fix
+- [ ] Root cause identified
+- [ ] Fix implemented
+- [ ] Issue updated
+
+---
+
+**Last Updated**: 2025-12-01

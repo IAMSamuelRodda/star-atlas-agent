@@ -49,7 +49,19 @@ See `ARCHITECTURE.md` for complete details.
 
 ## 🔄 Workflow Quick Reference
 
-**Branch from dev, PR to dev** (NOT main). See `CONTRIBUTING.md` for details.
+**Git Worktrees** (NOT branch switching):
+```bash
+# Create worktree for feature work
+git worktree add ../star-atlas-agent--feature-x feature-x
+
+# Work in isolated directory (no checkout conflicts)
+cd ../star-atlas-agent--feature-x
+
+# When done, remove worktree
+git worktree remove ../star-atlas-agent--feature-x
+```
+
+**Why worktrees?** Multiple Claude Code agents on same machine cause conflicts when switching branches. Worktrees provide isolated directories sharing the same `.git` objects.
 
 **Commit linking**: Use `Closes #N` or `Relates to #N` in all commits.
 

@@ -1,0 +1,281 @@
+# Progress Tracking
+
+> **Purpose**: Task tracking for MVP development
+> **Tracking Method**: Document-based (no GitHub Projects)
+> **Generated from**: specs/BLUEPRINT-project-staratlas-20251201.yaml
+
+**Last Updated**: 2025-12-01
+**Milestone**: v0.1.0 MVP Release (8-10 weeks estimated)
+
+---
+
+## Status Legend
+
+| Status | Meaning |
+|--------|---------|
+| 🔴 | Not Started |
+| 🟡 | In Progress |
+| 🟢 | Complete |
+| ⚠️ | Blocked |
+| 🔍 | Needs Spike |
+
+---
+
+## Epic 1: MCP Server - Star Atlas & Solana Integration
+
+**Estimated**: 21 days | **Status**: 🔴
+
+### Feature 1.1: MCP Server Foundation (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_1_1_1 | Initialize MCP server package with TypeScript and SDK | 1.5 | 1d | 🔴 |
+| task_1_1_2 | Implement server lifecycle handlers | 1.8 | 1d | 🔴 |
+| task_1_1_3 | Add tool registration and error handling framework | 2.2 | 2d | 🔴 |
+
+### Feature 1.2: Solana Blockchain Tools (6 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_1_2_1 | Implement getWalletBalance tool | 2.3 | 2d | 🔴 |
+| task_1_2_2 | Implement getTransactionHistory tool | 2.5 | 2d | 🔴 |
+| task_1_2_3 | Implement prepareTransaction tool | **3.2** ⚠️ | 2d | 🔴 |
+
+### Feature 1.3: Star Atlas Fleet Tools (7 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_1_3_1 | Implement getFleetStatus tool | 3.0 | 3d | 🔴 |
+| task_1_3_2 | Implement predictFuelDepletion tool | 2.8 | 2d | 🔴 |
+| task_1_3_3 | Implement subscribeToFleetUpdates WebSocket | **3.5** ⚠️ | 2d | 🔴 |
+
+### Feature 1.4: Market & Economic Tools (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_1_4_1 | Implement getTokenPrices tool | 1.8 | 1d | 🔴 |
+| task_1_4_2 | Implement getMarketplaceOrders tool | 2.5 | 2d | 🔴 |
+| task_1_4_3 | Add market data caching layer | 2.0 | 1d | 🔴 |
+
+---
+
+## Epic 2: Memory Service - User Context & Preferences
+
+**Estimated**: 13 days | **Status**: 🔴
+
+### Feature 2.1: SQLite Database Setup (3 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_2_1_1 | Initialize better-sqlite3 with migrations | 2.2 | 2d | 🔴 |
+| task_2_1_2 | Create users table | 1.5 | 0.5d | 🔴 |
+| task_2_1_3 | Create conversations table with TTL | 1.8 | 0.5d | 🔴 |
+
+### Feature 2.2: User Preference Management (3 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_2_2_1 | Implement preference CRUD operations | 1.7 | 2d | 🔴 |
+| task_2_2_2 | Add preference validation | 2.0 | 1d | 🔴 |
+
+### Feature 2.3: Conversation Context Storage (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_2_3_1 | Implement message append with limit | 2.0 | 2d | 🔴 |
+| task_2_3_2 | Implement TTL cleanup job | 2.5 | 1d | 🔴 |
+| task_2_3_3 | Add conversation retrieval | 1.8 | 1d | 🔴 |
+
+### Feature 2.4: Memory Service API (3 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_2_4_1 | Create memory service module | 2.2 | 2d | 🔴 |
+| task_2_4_2 | Expose memory methods to Agent Core | 1.8 | 1d | 🔴 |
+
+---
+
+## Epic 3: Agent Core - Claude Agent SDK Orchestration
+
+**Estimated**: 15 days | **Status**: 🔴
+
+### Feature 3.1: Agent SDK Integration (5 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_3_1_1 | Initialize Agent SDK | 2.0 | 1d | 🔴 |
+| task_3_1_2 | Configure MCP server as tool provider | 2.8 | 2d | 🔴 |
+| task_3_1_3 | Implement conversation loop | 2.7 | 2d | 🔴 |
+
+### Feature 3.2: Agent Personality & System Prompt (3 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_3_2_1 | Write base system prompt | 1.5 | 1d | 🔴 |
+| task_3_2_2 | Implement dynamic prompt injection | 2.0 | 2d | 🔴 |
+
+### Feature 3.3: Session Management (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_3_3_1 | Implement session creation | 2.0 | 1.5d | 🔴 |
+| task_3_3_2 | Add session state tracking | 2.2 | 1.5d | 🔴 |
+| task_3_3_3 | Implement session cleanup | 2.5 | 1d | 🔴 |
+
+### Feature 3.4: Agent API Endpoints (3 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_3_4_1 | Create /api/agent/message endpoint | 1.8 | 1.5d | 🔴 |
+| task_3_4_2 | Add streaming response support | 2.5 | 1.5d | 🔴 |
+
+---
+
+## Epic 4: Voice Service - Chatterbox STT/TTS Integration
+
+**Estimated**: 18 days | **Status**: 🔴
+
+### Feature 4.1: Chatterbox Installation (4 days) 🔍
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_4_1_1 | Deploy Chatterbox Docker container | 2.8 | 2d | 🔍 |
+| task_4_1_2 | Configure Chatterbox models | 2.2 | 2d | 🔍 |
+
+**⚠️ NEEDS SPIKE**: Chatterbox deployment patterns unclear - see ISSUES.md
+
+### Feature 4.2: WebRTC Signaling Server (5 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_4_2_1 | Implement WebSocket server | 2.5 | 2d | 🔴 |
+| task_4_2_2 | Add peer connection management | 3.0 | 2d | 🔴 |
+| task_4_2_3 | Implement connection recovery | 2.8 | 1d | 🔴 |
+
+### Feature 4.3: Audio Streaming Pipeline (6 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_4_3_1 | Implement audio capture to STT | 3.0 | 2d | 🔴 |
+| task_4_3_2 | Implement TTS response streaming | 3.2 | 2d | 🔴 |
+| task_4_3_3 | Add latency monitoring | **3.5** ⚠️ | 2d | 🔴 |
+
+### Feature 4.4: Voice Service API (3 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_4_4_1 | Create voice session endpoints | 1.8 | 1.5d | 🔴 |
+| task_4_4_2 | Add Agent Core integration | 2.2 | 1.5d | 🔴 |
+
+---
+
+## Epic 5: Web Application - React Frontend
+
+**Estimated**: 20 days | **Status**: 🔴
+
+### Feature 5.1: React + Vite Setup (2 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_5_1_1 | Initialize Vite project | 1.3 | 1d | 🔴 |
+| task_5_1_2 | Configure routing | 1.7 | 1d | 🔴 |
+
+### Feature 5.2: Authentication UI (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_5_2_1 | Create magic link form | 1.8 | 1.5d | 🔴 |
+| task_5_2_2 | Implement JWT handling | 2.3 | 1.5d | 🔴 |
+| task_5_2_3 | Add wallet connection | 2.5 | 1d | 🔴 |
+
+### Feature 5.3: Voice Interaction UI (5 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_5_3_1 | Create push-to-talk button | 2.0 | 1.5d | 🔴 |
+| task_5_3_2 | Implement useVoice hook | 2.8 | 2d | 🔴 |
+| task_5_3_3 | Add audio waveform visualization | 2.7 | 1.5d | 🔴 |
+
+### Feature 5.4: Chat Interface (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_5_4_1 | Create message list component | 1.8 | 1.5d | 🔴 |
+| task_5_4_2 | Add text input fallback | 1.7 | 1.5d | 🔴 |
+| task_5_4_3 | Implement streaming message display | 2.5 | 1d | 🔴 |
+
+### Feature 5.5: Fleet Status Dashboard (5 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_5_5_1 | Create fleet card component | 2.0 | 2d | 🔴 |
+| task_5_5_2 | Add real-time fleet updates | 2.7 | 2d | 🔴 |
+| task_5_5_3 | Implement alert notifications | 2.2 | 1d | 🔴 |
+
+---
+
+## Epic 6: Deployment & Infrastructure
+
+**Estimated**: 14 days | **Status**: 🔴
+
+### Feature 6.1: Docker Compose Configuration (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_6_1_1 | Create Dockerfiles | 2.0 | 2d | 🔴 |
+| task_6_1_2 | Write docker-compose.yml | 2.5 | 1.5d | 🔴 |
+| task_6_1_3 | Add SQLite volume mounts | 2.3 | 0.5d | 🔴 |
+
+### Feature 6.2: Caddy Reverse Proxy Integration (3 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_6_2_1 | Update Caddyfile | 1.8 | 1d | 🔴 |
+| task_6_2_2 | Configure HTTPS | 2.2 | 1.5d | 🔴 |
+| task_6_2_3 | Test routing | 2.0 | 0.5d | 🔴 |
+
+### Feature 6.3: VPS Deployment (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_6_3_1 | Create deployment script | 2.3 | 2d | 🔴 |
+| task_6_3_2 | Configure secrets management | 2.5 | 1.5d | 🔴 |
+| task_6_3_3 | Verify VPS performance | 2.7 | 0.5d | 🔴 |
+
+### Feature 6.4: Monitoring & Logging (3 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_6_4_1 | Configure Docker logging | 1.7 | 1.5d | 🔴 |
+| task_6_4_2 | Add health check endpoints | 1.8 | 1d | 🔴 |
+| task_6_4_3 | Set up Caddy access logs | 1.8 | 0.5d | 🔴 |
+
+---
+
+## Epic 7: Testing & Quality Assurance
+
+**Estimated**: 15 days | **Status**: 🔴
+
+### Feature 7.1: Unit Tests (5 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_7_1_1 | Unit tests for MCP server | 2.2 | 2d | 🔴 |
+| task_7_1_2 | Unit tests for memory service | 1.8 | 1.5d | 🔴 |
+| task_7_1_3 | Unit tests for agent core | 2.0 | 1.5d | 🔴 |
+
+### Feature 7.2: E2E Tests (6 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_7_2_1 | Set up Playwright | 2.3 | 2d | 🔴 |
+| task_7_2_2 | E2E tests for auth flow | 2.5 | 2d | 🔴 |
+| task_7_2_3 | E2E tests for voice/chat | 2.8 | 2d | 🔴 |
+
+### Feature 7.3: Integration Tests (4 days)
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_7_3_1 | Test Agent + MCP integration | 2.5 | 2d | 🔴 |
+| task_7_3_2 | Test Voice + Agent integration | 2.3 | 1.5d | 🔴 |
+| task_7_3_3 | Test WebSocket subscriptions | 2.2 | 0.5d | 🔴 |
+
+---
+
+## Summary
+
+| Epic | Features | Tasks | Est. Days | Status |
+|------|----------|-------|-----------|--------|
+| MCP Server | 4 | 11 | 21 | 🔴 |
+| Memory Service | 4 | 10 | 13 | 🔴 |
+| Agent Core | 4 | 9 | 15 | 🔴 |
+| Voice Service | 4 | 10 | 18 | 🔴 |
+| Web Application | 5 | 13 | 20 | 🔴 |
+| Deployment | 4 | 10 | 14 | 🔴 |
+| Testing | 3 | 9 | 15 | 🔴 |
+| **TOTAL** | **28** | **72** | **116** | 🔴 |
+
+---
+
+## Deferred (Post-MVP)
+
+- Personality progression (colleague → partner → friend)
+- Vector embeddings for semantic memory
+- Always-listening voice mode
+- zProfile SSO integration
+
+---
+
+**Note**: Update this file as tasks complete. Use worktrees for parallel development.

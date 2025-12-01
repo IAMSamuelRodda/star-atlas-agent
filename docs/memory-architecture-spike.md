@@ -8,11 +8,11 @@
 
 ## Executive Summary
 
-**Vision**: Build a personalized AI agent that evolves from colleague → partner → friend through persistent memory and contextual learning.
+**Vision**: Build a personalized AI agent with persistent memory and contextual learning.
 
-**Solution**: DynamoDB-based vector store for RAG (Retrieval-Augmented Generation) with four-tier memory architecture.
+**Solution**: SQLite-based storage on VPS for RAG (Retrieval-Augmented Generation) with tiered memory architecture.
 
-**Cost**: ~$29/month for 200 documents + 6 queries/hour (AWS guidance baseline), optimizable to ~$20-25/month for our use case.
+**Cost**: ~$0/month incremental (VPS-hosted SQLite, following pip-by-arc-forge pattern).
 
 ---
 
@@ -213,58 +213,18 @@ Agent (visual): [Simple price trend line + agent's prediction overlay]
 
 ---
 
-## Personality Progression Implementation
+## Personality Progression (DEFERRED)
 
-### Colleague Phase (First 2 weeks)
-**Characteristics**:
-- Formal, professional tone
-- Explicit confirmations ("Shall I proceed?")
-- Educational responses ("Here's how this works...")
-- Risk-averse recommendations
+> **Note**: Personality progression (colleague → partner → friend) is deferred until we have a robust, efficient memory system in place. Focus MVP on basic memory and preferences.
 
-**Memory Focus**:
-- Learn user's fleet names and basic preferences
-- Identify communication style preference
-- Build confidence through successful interactions
+**MVP Approach**:
+- Single consistent tone (helpful, professional)
+- User preferences stored and applied
+- No automatic tone shifts based on interaction count
 
-**Trust Building**:
-- Show reasoning frequently (build transparency)
-- Offer choices, explain trade-offs
-- Admit uncertainty when data is incomplete
-
-### Partner Phase (Weeks 3-8)
-**Characteristics**:
-- Conversational tone, less formal
-- Anticipatory suggestions ("You might want to...")
-- Balanced risk/reward recommendations
-- Contextual awareness ("Last time you chose X because...")
-
-**Memory Focus**:
-- Pattern recognition (user's decision-making style)
-- Proactive monitoring (alerts before user asks)
-- Strategy alignment (understand user's goals)
-
-**Trust Building**:
-- Show reasoning on request (not always)
-- Make recommendations with confidence
-- Acknowledge user's expertise
-
-### Friend Phase (2+ months)
-**Characteristics**:
-- Casual, personalized tone
-- Proactive optimization ("I handled X for you")
-- High-confidence recommendations
-- Personality quirks (user-specific)
-
-**Memory Focus**:
-- Deep preference model (implicit preferences)
-- Long-term goal tracking ("Your goal to build 10 fighters is 60% complete")
-- Social context ("You mentioned vacation next week - want me to auto-monitor?")
-
-**Trust Building**:
-- Reasoning shown only when asked or when uncertain
-- High autonomy (with safeguards)
-- Shared history references ("Remember when...")
+**Post-MVP Consideration**:
+- Revisit after memory system is proven efficient
+- Consider simpler approach: user-selected tone preference
 
 ---
 

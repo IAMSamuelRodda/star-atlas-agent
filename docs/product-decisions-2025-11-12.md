@@ -186,7 +186,6 @@ Agent: "Great! I'm opening your wallet connection now..."
 - ✅ Full memory (long-term + semantic)
 - ✅ Economic optimization (crafting ROI)
 - ✅ Proactive alerts (fuel, repairs)
-- ✅ Personality progression (colleague → partner → friend)
 - ✅ Custom visualizations
 - ❌ No transaction automation
 - ❌ No multi-user coordination
@@ -204,7 +203,6 @@ Agent: "Great! I'm opening your wallet connection now..."
 
 **When user cancels subscription**:
 - ✅ **Keep**: All conversation history (read-only)
-- ✅ **Keep**: Personality/relationship data (frozen)
 - ✅ **Keep**: Fleet configurations (read-only)
 - ✅ **Keep**: Profile and preferences
 - ⏸️ **Pause**: Proactive monitoring (no new alerts)
@@ -323,20 +321,18 @@ Monday 8pm: "Did you get those repairs done?" ← Agent remembers context from 1
 
 **Cost**: ~$5/month per 100 users (assuming 50 key memories per user)
 
-#### Tier 4: Relationship Impression (Permanent, High-Level)
+#### Tier 4: User Profile (Permanent, High-Level)
 **Retention**: Permanent
 **Fidelity**: Structured profile (not conversation-based)
-**Storage**: DynamoDB user profile table
+**Storage**: SQLite user profile table
 **Update Frequency**: After each session (async batch)
 
 **Profile Structure**:
 ```json
 {
   "user_id": "user_xyz",
-  "personality_phase": "partner",  // colleague → partner → friend
   "communication_style": "casual",  // formal, technical, casual
   "risk_tolerance": "moderate",    // conservative, moderate, aggressive
-  "decision_speed": "deliberate",   // quick, deliberate, analytical
   "primary_goals": [
     "Build 10 fighters by end of year",
     "Maximize crafting profit margins"
@@ -346,16 +342,15 @@ Monday 8pm: "Did you get those repairs done?" ← Agent remembers context from 1
     "speed_priority": "medium",
     "cost_priority": "medium"
   },
-  "relationship_metrics": {
+  "usage_metrics": {
     "sessions_count": 47,
     "total_voice_minutes": 320,
-    "trust_score": 0.82,  // 0-1 scale
     "last_interaction": "2025-11-12T10:00:00Z"
   }
 }
 ```
 
-**Cost**: ~$0.05/month per 100 users (lightweight structured data)
+**Cost**: ~$0 (SQLite on VPS)
 
 ### Memory Compression Strategy (Cost Optimization)
 

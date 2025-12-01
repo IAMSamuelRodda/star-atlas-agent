@@ -1,13 +1,13 @@
 project_overview:
-  brief: "Multi-user SaaS voice-first AI agent for Star Atlas players providing fleet monitoring, economic optimization, and personalized assistance through four-tier memory architecture (colleague → partner → friend progression)."
+  brief: "Multi-user SaaS voice-first AI agent for Star Atlas players providing fleet monitoring, economic optimization, and personalized assistance through simple memory architecture."
   core_objectives:
-    - "Deploy MVP within AWS Free Tier budget (<$35/month) with voice latency <500ms"
-    - "Build DynamoDB-based RAG memory system enabling relationship progression and personalized insights"
+    - "Deploy MVP on Digital Ocean VPS with voice latency <500ms"
+    - "Build SQLite-based memory system for user preferences and conversation context (pip-by-arc-forge pattern)"
     - "Implement MCP server for Star Atlas + Solana blockchain integration with graceful offline fallbacks"
     - "Create handshake UX onboarding (<30 sec to first interaction) with email-first progressive authentication"
   complexity: "complex"
   timeline_note: "AI-assisted development with 20x speedup factor applied to estimates; sporadic work pattern anticipated"
-  budget_constraint: "MVP <$35/month, optimize for AWS Free Tier (Lambda, DynamoDB, S3, CloudFront)"
+  budget_constraint: "MVP on existing VPS ($0 incremental), predictable fixed costs"
 
 architecture:
   pattern: "vertical-slice"
@@ -26,10 +26,10 @@ architecture:
       token_estimate: "<20k"
 
     - name: "memory-service"
-      purpose: "Four-tier memory architecture with DynamoDB vector store for personalization"
-      boundaries: "Scope: Session memory, short-term cache, key memory extraction, vector search, compression. Out: Embedding generation (Bedrock), business logic."
-      dependencies: ["aws-sdk DynamoDB", "aws-sdk Bedrock"]
-      token_estimate: "<15k"
+      purpose: "Simple memory architecture with SQLite for user preferences and context"
+      boundaries: "Scope: Session memory, short-term cache, user preferences. Out: Complex personality progression (deferred), embedding generation."
+      dependencies: ["better-sqlite3"]
+      token_estimate: "<10k"
 
     - name: "voice-service"
       purpose: "WebRTC + Whisper STT + ElevenLabs TTS for <500ms voice round-trip"
@@ -566,9 +566,9 @@ milestones:
               - "Filter by program ID (SAGE, marketplace)"
 
       epic_4:
-        name: "Memory System & Personalization"
+        name: "Memory System (Simplified)"
         weeks: "6-8"
-        milestone: "Four-tier memory operational with vector search; personality progression triggers working"
+        milestone: "Basic memory operational with SQLite; user preferences and conversation context working"
 
         feature_4_1:
           name: "Session & Short-Term Memory"
@@ -721,56 +721,42 @@ milestones:
               - "Update user profile with patterns"
 
         feature_4_4:
-          name: "Personality Progression System"
+          name: "User Preferences System"
           complexity:
-            composite: 2.5
+            composite: 1.8
             dimensions:
               technical_complexity: 2
-              scope_size: 3
-              dependencies: 3
-              uncertainty: 3
-              risk: 2
-              testing: 3
-          estimated_days: 4
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 1
+              testing: 2
+          estimated_days: 2
           deliverables:
-            - "Personality phase tracking (colleague → partner → friend)"
-            - "Phase transition triggers based on trust metrics"
-            - "Tone adaptation in prompts per phase"
-            - "User profile updates with relationship metrics"
+            - "User preference storage (communication style, fleet preferences)"
+            - "Preference application in agent responses"
+            - "Simple usage metrics tracking"
+          notes: "Personality progression DEFERRED - focus on basic preferences first"
 
           task_4_4_1:
-            name: "Trust Score Calculation"
+            name: "User Preferences Storage"
             complexity:
-              composite: 2.0
-            estimated_days: 1.5
+              composite: 1.5
+            estimated_days: 1
             deliverables:
-              - "Trust score formula: (positive interactions / total) * session_count weight"
-              - "Positive: user confirms recommendation, shares context"
-              - "Negative: user corrects agent, rejects recommendation"
-              - "Update after each interaction"
-            references:
-              - "docs/memory-architecture-spike.md § Personality Progression"
+              - "SQLite schema for user preferences"
+              - "CRUD operations for preferences"
+              - "Default preferences for new users"
 
           task_4_4_2:
-            name: "Phase Transition Logic"
+            name: "Preference Application"
             complexity:
-              composite: 2.3
-            estimated_days: 1.5
+              composite: 1.8
+            estimated_days: 1
             deliverables:
-              - "Colleague → Partner: trust_score > 0.6, sessions > 20"
-              - "Partner → Friend: trust_score > 0.8, sessions > 50"
-              - "Store personality_phase in user profile"
-              - "Log phase transitions for analytics"
-
-          task_4_4_3:
-            name: "Prompt Tone Adaptation"
-            complexity:
-              composite: 2.0
-            estimated_days: 1.5
-            deliverables:
-              - "System prompts per phase (formal → conversational → casual)"
-              - "Response templates with phase-specific language"
-              - "Colleague: 'Shall I proceed?', Friend: 'I'll handle it'"
+              - "Inject preferences into system prompt"
+              - "Apply fleet preferences to recommendations"
+              - "Track usage metrics (session count, last interaction)"
 
       epic_5:
         name: "Agent Core - Claude Agent SDK Integration"
@@ -1760,15 +1746,14 @@ feature_specifications:
       - "Streaming STT/TTS operational"
       - "Parallel processing pipeline reduces wait time by 30%"
 
-  - feature: "Memory-Augmented Personalization"
-    description: "Agent remembers user preferences and adapts tone (colleague → partner → friend)"
-    complexity: "high"
-    assigned_agents: 3
+  - feature: "Memory-Based Personalization"
+    description: "Agent remembers user preferences and applies them consistently"
+    complexity: "medium"
+    assigned_agents: 2
     acceptance_criteria:
       - "User preferences persist across sessions"
-      - "Trust score increases with positive interactions"
-      - "Personality phase transitions at correct thresholds"
-      - "Vector search retrieves relevant context in <200ms"
+      - "Preferences applied to recommendations"
+      - "Conversation context maintained within session"
 
   - feature: "Handshake UX Onboarding"
     description: "New user completes email → first interaction in <30 seconds"
@@ -1779,14 +1764,14 @@ feature_specifications:
       - "Agent greets user by name after first login"
       - "Wallet connection optional, can be skipped"
 
-  - feature: "AWS Free Tier Budget"
-    description: "MVP operates within <$35/month with 50 test users"
-    complexity: "medium"
-    assigned_agents: 2
+  - feature: "VPS Budget (Fixed Cost)"
+    description: "MVP operates on existing VPS with no incremental cost"
+    complexity: "low"
+    assigned_agents: 1
     acceptance_criteria:
-      - "30-day cost tracking shows <$35/month"
-      - "Cost alarms trigger at $40/month"
-      - "Optimization recommendations documented"
+      - "Service fits within existing VPS capacity (640MB RAM available)"
+      - "SQLite database size under 1GB"
+      - "No new infrastructure required"
 
 testing_strategy:
   levels:
@@ -1848,26 +1833,23 @@ project_structure:
       purpose: "CI/CD pipelines for test, build, deploy"
 
 cost_estimates:
-  mvp_monthly_cost: "$28-35"
+  mvp_monthly_cost: "$5-10 (incremental)"
   breakdown:
-    - component: "Lambda + API Gateway"
-      cost: "$0 (Free Tier 1M requests)"
-    - component: "DynamoDB (data + vectors)"
-      cost: "$10-15 (beyond 25GB Free Tier)"
-    - component: "S3 + CloudFront"
-      cost: "$0 (Free Tier 50GB + 1TB transfer)"
-    - component: "ECS Fargate (voice service)"
-      cost: "$3-5"
-    - component: "Bedrock Titan v2 (embeddings)"
-      cost: "$8-10"
-    - component: "Whisper + ElevenLabs"
-      cost: "$5-7 (usage-based)"
+    - component: "VPS (existing)"
+      cost: "$0 (already provisioned, 640MB+ RAM available)"
+    - component: "SQLite database"
+      cost: "$0 (file-based, no separate service)"
+    - component: "Caddy reverse proxy"
+      cost: "$0 (already running)"
+    - component: "Whisper API"
+      cost: "$3-5 (usage-based)"
+    - component: "ElevenLabs TTS"
+      cost: "$2-5 (usage-based)"
 
   optimization_opportunities:
-    - "Binary embeddings: -50% Bedrock cost ($4/month savings)"
-    - "3-day TTL vs 7-day: -$2/month DynamoDB"
-    - "Batch embedding requests: -$3/month Lambda"
-    - "Optimized target: $20-25/month"
+    - "Self-hosted Whisper (Ollama): -$3-5/month"
+    - "Open-source TTS (Coqui): -$2-5/month"
+    - "Optimized target: $0-5/month (voice APIs only)"
 
 timeline_summary:
   total_weeks: "14-20 (AI-adjusted with 20x speedup)"

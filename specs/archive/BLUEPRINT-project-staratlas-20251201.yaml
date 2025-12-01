@@ -1,0 +1,1478 @@
+blueprint_type: project
+created: 2025-12-01
+tracking_method: document  # PROGRESS.md + ISSUES.md
+
+project_overview:
+  brief: "Voice-first AI assistant for Star Atlas players, deployed on Digital Ocean VPS with SQLite storage. Provides real-time fleet monitoring, market analysis, and conversational UI using Claude Agent SDK with MCP tools for Solana blockchain integration."
+  core_objectives:
+    - "Deploy functional MVP on existing Digital Ocean VPS with <500ms voice latency"
+    - "Implement MCP server with Star Atlas and Solana blockchain tools"
+    - "Build SQLite-based memory service for user preferences and conversation context"
+    - "Deliver voice-enabled web interface with push-to-talk interaction"
+
+architecture:
+  pattern: "vertical-slice"
+  rationale: "Feature-focused development optimized for AI-assisted coding. Each vertical slice (MCP, Memory, Voice, Web) can be developed in parallel with minimal context switching. Reduces token usage and enables rapid iteration during MVP phase."
+
+milestones:
+  milestone_1:
+    name: "v0.1.0 MVP Release"
+    timeline_weeks: "8-10"
+
+    epics:
+      epic_1:
+        name: "MCP Server - Star Atlas & Solana Integration"
+
+        feature_1_1:
+          name: "MCP Server Foundation"
+          complexity:
+            composite: 2.3
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 2
+              testing: 3
+          estimated_days: 4
+
+          task_1_1_1:
+            name: "Initialize MCP server package with TypeScript and SDK"
+            complexity:
+              composite: 1.5
+              dimensions:
+                technical_complexity: 2
+                scope_size: 1
+                dependencies: 1
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+          task_1_1_2:
+            name: "Implement server lifecycle handlers (initialize, shutdown, health)"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+          task_1_1_3:
+            name: "Add tool registration and error handling framework"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+        feature_1_2:
+          name: "Solana Blockchain Tools"
+          complexity:
+            composite: 2.8
+            dimensions:
+              technical_complexity: 3
+              scope_size: 3
+              dependencies: 3
+              uncertainty: 3
+              risk: 3
+              testing: 2
+          estimated_days: 6
+
+          task_1_2_1:
+            name: "Implement getWalletBalance tool with token account parsing"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+          task_1_2_2:
+            name: "Implement getTransactionHistory tool with pagination"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 3
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+          task_1_2_3:
+            name: "Implement prepareTransaction tool for unsigned transaction creation"
+            complexity:
+              composite: 3.2
+              dimensions:
+                technical_complexity: 4
+                scope_size: 3
+                dependencies: 3
+                uncertainty: 3
+                risk: 4
+                testing: 3
+            estimated_days: 2
+            needs_decomposition: true
+            decomposition_reason: "High technical complexity (4.0) and risk (4.0) due to transaction construction and security requirements"
+
+        feature_1_3:
+          name: "Star Atlas Fleet Tools"
+          complexity:
+            composite: 3.1
+            dimensions:
+              technical_complexity: 4
+              scope_size: 3
+              dependencies: 3
+              uncertainty: 3
+              risk: 2
+              testing: 3
+          estimated_days: 7
+
+          task_1_3_1:
+            name: "Implement getFleetStatus tool with SAGE API integration"
+            complexity:
+              composite: 3.0
+              dimensions:
+                technical_complexity: 4
+                scope_size: 3
+                dependencies: 3
+                uncertainty: 3
+                risk: 2
+                testing: 3
+            estimated_days: 3
+
+          task_1_3_2:
+            name: "Implement predictFuelDepletion tool with consumption calculations"
+            complexity:
+              composite: 2.8
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 3
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+          task_1_3_3:
+            name: "Implement subscribeToFleetUpdates WebSocket tool"
+            complexity:
+              composite: 3.5
+              dimensions:
+                technical_complexity: 4
+                scope_size: 3
+                dependencies: 4
+                uncertainty: 4
+                risk: 3
+                testing: 3
+            estimated_days: 2
+            needs_decomposition: true
+            decomposition_reason: "High technical complexity (4.0) and uncertainty (4.0) due to WebSocket state management and Solana account subscriptions"
+
+        feature_1_4:
+          name: "Market & Economic Tools"
+          complexity:
+            composite: 2.2
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 2
+              risk: 2
+              testing: 2
+          estimated_days: 4
+
+          task_1_4_1:
+            name: "Implement getTokenPrices tool with CoinGecko API"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+          task_1_4_2:
+            name: "Implement getMarketplaceOrders tool with Star Atlas marketplace API"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+          task_1_4_3:
+            name: "Add market data caching layer with 5-min TTL"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+      epic_2:
+        name: "Memory Service - User Context & Preferences"
+
+        feature_2_1:
+          name: "SQLite Database Setup"
+          complexity:
+            composite: 2.0
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 2
+              testing: 2
+          estimated_days: 3
+
+          task_2_1_1:
+            name: "Initialize better-sqlite3 with schema migrations"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 3
+                testing: 2
+            estimated_days: 2
+
+          task_2_1_2:
+            name: "Create users table with preferences JSON field"
+            complexity:
+              composite: 1.5
+              dimensions:
+                technical_complexity: 1
+                scope_size: 1
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 0.5
+
+          task_2_1_3:
+            name: "Create conversations table with 48-hour TTL logic"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 0.5
+
+        feature_2_2:
+          name: "User Preference Management"
+          complexity:
+            composite: 1.8
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 1
+              risk: 2
+              testing: 2
+          estimated_days: 3
+
+          task_2_2_1:
+            name: "Implement preference CRUD operations (communication_style, risk_tolerance)"
+            complexity:
+              composite: 1.7
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 2
+
+          task_2_2_2:
+            name: "Add preference validation and schema versioning"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+        feature_2_3:
+          name: "Conversation Context Storage"
+          complexity:
+            composite: 2.3
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 2
+              testing: 3
+          estimated_days: 4
+
+          task_2_3_1:
+            name: "Implement conversation message append with message limit (50 messages)"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 2
+
+          task_2_3_2:
+            name: "Implement TTL cleanup job for conversations older than 48 hours"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 1
+
+          task_2_3_3:
+            name: "Add conversation retrieval with user_id index"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+        feature_2_4:
+          name: "Memory Service API"
+          complexity:
+            composite: 2.0
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 2
+              testing: 2
+          estimated_days: 3
+
+          task_2_4_1:
+            name: "Create memory service module with database connection pooling"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 2
+
+          task_2_4_2:
+            name: "Expose memory methods to Agent Core (getPreferences, saveConversation)"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+      epic_3:
+        name: "Agent Core - Claude Agent SDK Orchestration"
+
+        feature_3_1:
+          name: "Agent SDK Integration"
+          complexity:
+            composite: 2.5
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 3
+              risk: 2
+              testing: 2
+          estimated_days: 5
+
+          task_3_1_1:
+            name: "Initialize Agent SDK with Claude API configuration"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+          task_3_1_2:
+            name: "Configure MCP server as tool provider for agent"
+            complexity:
+              composite: 2.8
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 3
+                risk: 2
+                testing: 2
+            estimated_days: 2
+
+          task_3_1_3:
+            name: "Implement conversation loop with memory context injection"
+            complexity:
+              composite: 2.7
+              dimensions:
+                technical_complexity: 3
+                scope_size: 3
+                dependencies: 3
+                uncertainty: 3
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+        feature_3_2:
+          name: "Agent Personality & System Prompt"
+          complexity:
+            composite: 1.8
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 1
+              uncertainty: 2
+              risk: 1
+              testing: 2
+          estimated_days: 3
+
+          task_3_2_1:
+            name: "Write base system prompt (helpful colleague, Star Atlas expert)"
+            complexity:
+              composite: 1.5
+              dimensions:
+                technical_complexity: 1
+                scope_size: 2
+                dependencies: 1
+                uncertainty: 2
+                risk: 1
+                testing: 2
+            estimated_days: 1
+
+          task_3_2_2:
+            name: "Implement dynamic prompt injection with user preferences"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 1
+                testing: 2
+            estimated_days: 2
+
+        feature_3_3:
+          name: "Session Management"
+          complexity:
+            composite: 2.2
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 2
+              risk: 2
+              testing: 2
+          estimated_days: 4
+
+          task_3_3_1:
+            name: "Implement session creation with user authentication"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_3_3_2:
+            name: "Add session state tracking (active, idle, terminated)"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_3_3_3:
+            name: "Implement session cleanup on timeout (30 min idle)"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 1
+
+        feature_3_4:
+          name: "Agent API Endpoints"
+          complexity:
+            composite: 2.0
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 2
+              testing: 2
+          estimated_days: 3
+
+          task_3_4_1:
+            name: "Create Express server with /api/agent/message endpoint"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_3_4_2:
+            name: "Add streaming response support for real-time agent output"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+      epic_4:
+        name: "Voice Service - Chatterbox STT/TTS Integration"
+
+        feature_4_1:
+          name: "Chatterbox Installation & Configuration"
+          complexity:
+            composite: 2.5
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 3
+              risk: 2
+              testing: 2
+          estimated_days: 4
+          needs_spike: true
+          spike_reason: "Uncertainty around Chatterbox deployment on VPS and integration patterns"
+          spike_suggestion: "BLUEPRINT-spike-chatterbox-integration-20251202.yaml"
+
+          task_4_1_1:
+            name: "Deploy Chatterbox Docker container on Digital Ocean VPS"
+            complexity:
+              composite: 2.8
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 4
+                risk: 2
+                testing: 2
+            estimated_days: 2
+
+          task_4_1_2:
+            name: "Configure Chatterbox STT/TTS models and endpoints"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 3
+                risk: 2
+                testing: 2
+            estimated_days: 2
+
+        feature_4_2:
+          name: "WebRTC Signaling Server"
+          complexity:
+            composite: 2.8
+            dimensions:
+              technical_complexity: 3
+              scope_size: 3
+              dependencies: 3
+              uncertainty: 3
+              risk: 3
+              testing: 2
+          estimated_days: 5
+
+          task_4_2_1:
+            name: "Implement WebSocket server for WebRTC signaling"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 3
+                dependencies: 2
+                uncertainty: 2
+                risk: 3
+                testing: 2
+            estimated_days: 2
+
+          task_4_2_2:
+            name: "Add peer connection management (offer/answer/ICE candidates)"
+            complexity:
+              composite: 3.0
+              dimensions:
+                technical_complexity: 4
+                scope_size: 3
+                dependencies: 3
+                uncertainty: 3
+                risk: 3
+                testing: 2
+            estimated_days: 2
+
+          task_4_2_3:
+            name: "Implement connection state tracking and recovery"
+            complexity:
+              composite: 2.8
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 3
+                risk: 3
+                testing: 3
+            estimated_days: 1
+
+        feature_4_3:
+          name: "Audio Streaming Pipeline"
+          complexity:
+            composite: 3.2
+            dimensions:
+              technical_complexity: 4
+              scope_size: 3
+              dependencies: 4
+              uncertainty: 3
+              risk: 3
+              testing: 3
+          estimated_days: 6
+
+          task_4_3_1:
+            name: "Implement audio capture from WebRTC to Chatterbox STT"
+            complexity:
+              composite: 3.0
+              dimensions:
+                technical_complexity: 4
+                scope_size: 3
+                dependencies: 4
+                uncertainty: 3
+                risk: 3
+                testing: 3
+            estimated_days: 2
+
+          task_4_3_2:
+            name: "Implement TTS response streaming from Chatterbox to WebRTC"
+            complexity:
+              composite: 3.2
+              dimensions:
+                technical_complexity: 4
+                scope_size: 3
+                dependencies: 4
+                uncertainty: 3
+                risk: 3
+                testing: 3
+            estimated_days: 2
+
+          task_4_3_3:
+            name: "Add latency monitoring and optimization (<500ms target)"
+            complexity:
+              composite: 3.5
+              dimensions:
+                technical_complexity: 4
+                scope_size: 3
+                dependencies: 4
+                uncertainty: 4
+                risk: 3
+                testing: 3
+            estimated_days: 2
+            needs_decomposition: true
+            decomposition_reason: "High technical complexity (4.0) and uncertainty (4.0) due to real-time performance requirements"
+
+        feature_4_4:
+          name: "Voice Service API"
+          complexity:
+            composite: 2.0
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 2
+              testing: 2
+          estimated_days: 3
+
+          task_4_4_1:
+            name: "Create voice session endpoints (start, stop, status)"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_4_4_2:
+            name: "Add integration with Agent Core for text-to-speech responses"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+      epic_5:
+        name: "Web Application - React Frontend"
+
+        feature_5_1:
+          name: "React + Vite Project Setup"
+          complexity:
+            composite: 1.5
+            dimensions:
+              technical_complexity: 1
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 1
+              risk: 1
+              testing: 2
+          estimated_days: 2
+
+          task_5_1_1:
+            name: "Initialize Vite project with React, TypeScript, and TanStack Query"
+            complexity:
+              composite: 1.3
+              dimensions:
+                technical_complexity: 1
+                scope_size: 1
+                dependencies: 2
+                uncertainty: 1
+                risk: 1
+                testing: 2
+            estimated_days: 1
+
+          task_5_1_2:
+            name: "Configure routing with React Router and layout structure"
+            complexity:
+              composite: 1.7
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 1
+                testing: 2
+            estimated_days: 1
+
+        feature_5_2:
+          name: "Authentication UI"
+          complexity:
+            composite: 2.2
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 3
+              testing: 2
+          estimated_days: 4
+
+          task_5_2_1:
+            name: "Create magic link email form component"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 1
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_5_2_2:
+            name: "Implement JWT token handling and storage"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 4
+                testing: 2
+            estimated_days: 1.5
+
+          task_5_2_3:
+            name: "Add optional wallet connection with @solana/wallet-adapter-react"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 3
+                testing: 2
+            estimated_days: 1
+
+        feature_5_3:
+          name: "Voice Interaction UI"
+          complexity:
+            composite: 2.5
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 2
+              risk: 2
+              testing: 3
+          estimated_days: 5
+
+          task_5_3_1:
+            name: "Create push-to-talk button component with visual feedback"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_5_3_2:
+            name: "Implement WebRTC connection hook (useVoice)"
+            complexity:
+              composite: 2.8
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 3
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+          task_5_3_3:
+            name: "Add audio waveform visualization during recording/playback"
+            complexity:
+              composite: 2.7
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 1.5
+
+        feature_5_4:
+          name: "Chat Interface"
+          complexity:
+            composite: 2.0
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 1
+              risk: 2
+              testing: 2
+          estimated_days: 4
+
+          task_5_4_1:
+            name: "Create message list component with auto-scroll"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_5_4_2:
+            name: "Add text input fallback for non-voice interaction"
+            complexity:
+              composite: 1.7
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_5_4_3:
+            name: "Implement streaming message display for agent responses"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+        feature_5_5:
+          name: "Fleet Status Dashboard"
+          complexity:
+            composite: 2.3
+            dimensions:
+              technical_complexity: 2
+              scope_size: 3
+              dependencies: 2
+              uncertainty: 2
+              risk: 2
+              testing: 2
+          estimated_days: 5
+
+          task_5_5_1:
+            name: "Create fleet card component with fuel/cargo/health indicators"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 3
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 2
+
+          task_5_5_2:
+            name: "Add real-time fleet updates via WebSocket subscription"
+            complexity:
+              composite: 2.7
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 2
+
+          task_5_5_3:
+            name: "Implement alert notifications for fleet status changes"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+      epic_6:
+        name: "Deployment & Infrastructure"
+
+        feature_6_1:
+          name: "Docker Compose Configuration"
+          complexity:
+            composite: 2.3
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 2
+              risk: 3
+              testing: 2
+          estimated_days: 4
+
+          task_6_1_1:
+            name: "Create Dockerfiles for agent-core, voice-service, and web-app"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 2
+
+          task_6_1_2:
+            name: "Write docker-compose.yml with service dependencies and networks"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 3
+                testing: 2
+            estimated_days: 1.5
+
+          task_6_1_3:
+            name: "Add volume mounts for SQLite database persistence"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 3
+                testing: 2
+            estimated_days: 0.5
+
+        feature_6_2:
+          name: "Caddy Reverse Proxy Integration"
+          complexity:
+            composite: 2.0
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 2
+              risk: 2
+              testing: 2
+          estimated_days: 3
+
+          task_6_2_1:
+            name: "Update Caddyfile with Star Atlas Agent routes"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+          task_6_2_2:
+            name: "Configure HTTPS certificates and auto-renewal for subdomain"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_6_2_3:
+            name: "Test reverse proxy routing to Docker containers"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 2
+                risk: 2
+                testing: 2
+            estimated_days: 0.5
+
+        feature_6_3:
+          name: "VPS Deployment"
+          complexity:
+            composite: 2.5
+            dimensions:
+              technical_complexity: 2
+              scope_size: 3
+              dependencies: 3
+              uncertainty: 3
+              risk: 3
+              testing: 2
+          estimated_days: 4
+
+          task_6_3_1:
+            name: "Create deployment script for Docker Compose on VPS"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 3
+                testing: 2
+            estimated_days: 2
+
+          task_6_3_2:
+            name: "Configure environment variables and secrets management"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 2
+                scope_size: 3
+                dependencies: 3
+                uncertainty: 3
+                risk: 4
+                testing: 2
+            estimated_days: 1.5
+
+          task_6_3_3:
+            name: "Verify VPS RAM usage and performance under load"
+            complexity:
+              composite: 2.7
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 3
+                risk: 3
+                testing: 2
+            estimated_days: 0.5
+
+        feature_6_4:
+          name: "Monitoring & Logging"
+          complexity:
+            composite: 1.8
+            dimensions:
+              technical_complexity: 2
+              scope_size: 2
+              dependencies: 2
+              uncertainty: 1
+              risk: 2
+              testing: 2
+          estimated_days: 3
+
+          task_6_4_1:
+            name: "Configure Docker container logging with rotation"
+            complexity:
+              composite: 1.7
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1.5
+
+          task_6_4_2:
+            name: "Add health check endpoints for all services"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 1
+
+          task_6_4_3:
+            name: "Set up Caddy access logs for request monitoring"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 2
+                uncertainty: 1
+                risk: 2
+                testing: 2
+            estimated_days: 0.5
+
+      epic_7:
+        name: "Testing & Quality Assurance"
+
+        feature_7_1:
+          name: "Unit Tests"
+          complexity:
+            composite: 2.0
+            dimensions:
+              technical_complexity: 2
+              scope_size: 3
+              dependencies: 1
+              uncertainty: 2
+              risk: 1
+              testing: 3
+          estimated_days: 5
+
+          task_7_1_1:
+            name: "Write unit tests for MCP server tools (80% coverage target)"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 2
+                scope_size: 3
+                dependencies: 1
+                uncertainty: 2
+                risk: 1
+                testing: 3
+            estimated_days: 2
+
+          task_7_1_2:
+            name: "Write unit tests for memory service (CRUD operations)"
+            complexity:
+              composite: 1.8
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 1
+                uncertainty: 2
+                risk: 1
+                testing: 3
+            estimated_days: 1.5
+
+          task_7_1_3:
+            name: "Write unit tests for agent core session management"
+            complexity:
+              composite: 2.0
+              dimensions:
+                technical_complexity: 2
+                scope_size: 2
+                dependencies: 1
+                uncertainty: 2
+                risk: 1
+                testing: 3
+            estimated_days: 1.5
+
+        feature_7_2:
+          name: "E2E Tests (Playwright)"
+          complexity:
+            composite: 2.5
+            dimensions:
+              technical_complexity: 3
+              scope_size: 3
+              dependencies: 3
+              uncertainty: 2
+              risk: 2
+              testing: 3
+          estimated_days: 6
+
+          task_7_2_1:
+            name: "Set up Playwright test environment with test database"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+          task_7_2_2:
+            name: "Write E2E tests for authentication flow (magic link)"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 3
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+          task_7_2_3:
+            name: "Write E2E tests for voice interaction and chat flow"
+            complexity:
+              composite: 2.8
+              dimensions:
+                technical_complexity: 3
+                scope_size: 3
+                dependencies: 3
+                uncertainty: 3
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+        feature_7_3:
+          name: "Integration Tests"
+          complexity:
+            composite: 2.3
+            dimensions:
+              technical_complexity: 3
+              scope_size: 2
+              dependencies: 3
+              uncertainty: 2
+              risk: 2
+              testing: 3
+          estimated_days: 4
+
+          task_7_3_1:
+            name: "Test Agent Core + MCP Server integration"
+            complexity:
+              composite: 2.5
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 2
+
+          task_7_3_2:
+            name: "Test Voice Service + Agent Core integration"
+            complexity:
+              composite: 2.3
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 1.5
+
+          task_7_3_3:
+            name: "Test WebSocket fleet subscription end-to-end"
+            complexity:
+              composite: 2.2
+              dimensions:
+                technical_complexity: 3
+                scope_size: 2
+                dependencies: 3
+                uncertainty: 2
+                risk: 2
+                testing: 3
+            estimated_days: 0.5
+
+flagged_items:
+  high_complexity:
+    - task_1_2_3: "prepareTransaction tool - needs security review and decomposition"
+    - task_1_3_3: "subscribeToFleetUpdates WebSocket - complex state management"
+    - task_4_3_3: "Latency monitoring - real-time performance critical"
+
+  needs_spike:
+    - feature_4_1: "Chatterbox integration - deployment and integration patterns unclear"
+
+risk_assessment:
+  high_risks:
+    - name: "Voice latency exceeds 500ms target"
+      mitigation: "Early Chatterbox spike + performance testing, fallback to text-only"
+    - name: "VPS RAM insufficient for concurrent users"
+      mitigation: "Load testing before launch, VPS upgrade path defined ($24/month for 8GB)"
+    - name: "Solana RPC rate limiting on public endpoints"
+      mitigation: "Implement aggressive caching (5-min TTL), upgrade to paid RPC if needed"
+
+  medium_risks:
+    - name: "WebSocket connection stability on mobile browsers"
+      mitigation: "Auto-reconnect logic, graceful degradation to polling"
+    - name: "SQLite performance with concurrent writes"
+      mitigation: "Write-ahead logging (WAL), connection pooling, PostgreSQL migration path"
+
+dependencies:
+  external:
+    - name: "Solana blockchain availability"
+      type: "external_service"
+      criticality: "high"
+    - name: "Star Atlas SAGE API stability"
+      type: "external_service"
+      criticality: "high"
+    - name: "CoinGecko API uptime"
+      type: "external_service"
+      criticality: "medium"
+
+  internal:
+    - name: "MCP Server must be functional before Agent Core integration"
+      type: "feature_dependency"
+      blocks: ["epic_3"]
+    - name: "Memory Service required for Agent Core conversation context"
+      type: "feature_dependency"
+      blocks: ["epic_3"]
+    - name: "Voice Service depends on Agent Core API endpoints"
+      type: "feature_dependency"
+      blocks: ["feature_4_4"]
+
+assumptions:
+  - "Digital Ocean VPS has 640MB+ RAM available (verified 2025-12-01)"
+  - "Chatterbox can run alongside other services without resource conflicts"
+  - "Star Atlas SAGE API will remain stable during development"
+  - "SQLite performance adequate for <500 concurrent users"
+  - "WebRTC is supported in target browsers (Chrome, Firefox, Safari)"
+
+notes:
+  - "Personality progression (colleague -> partner -> friend) DEFERRED to post-MVP"
+  - "Vector embeddings DEFERRED - using simple text search for MVP memory"
+  - "Always-listening voice mode DEFERRED - push-to-talk only for MVP"
+  - "zProfile SSO integration DEFERRED until Star Atlas releases it (post-Dec 2025)"
+  - "Simple git workflow: main branch only, worktrees for parallel development"
+  - "Document-based tracking: PROGRESS.md + ISSUES.md (no GitHub Projects)"
