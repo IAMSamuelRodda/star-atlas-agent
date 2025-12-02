@@ -208,7 +208,7 @@ export function Chat() {
             <div className="message-avatar">I</div>
             <div className="message-content">
               <p className="message-text">
-                Hello, Commander! I'm IRIS, your AI companion for Star Atlas. How can I help you today?
+                Hey Commander! IRIS here, your guy in the chair. What do you need?
               </p>
             </div>
           </div>

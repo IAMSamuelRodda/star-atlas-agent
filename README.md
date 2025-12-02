@@ -1,6 +1,6 @@
 # IRIS
 
-> **Voice-first AI companion for Star Atlas** | *by Arc Forge*
+> **Your guy in the chair for Star Atlas** | *by Arc Forge*
 
 *IRIS - Intelligent Reconnaissance & Information System*
 
@@ -12,7 +12,7 @@ In Greek mythology, Iris was the goddess of the rainbow and messenger of the god
 
 ## Overview
 
-IRIS is a voice-first AI assistant for Star Atlas players. Monitor your fleet, optimize your economy, and get AI-powered recommendations through natural conversation.
+IRIS is your intelligent assistant for Star Atlas - the guy in the chair while you're out commanding fleets. Monitor your fleet, optimize your economy, and get smart recommendations through natural conversation.
 
 **Key Features:**
 - **Voice-First Interface** - Push-to-talk with <500ms response time

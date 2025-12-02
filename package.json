@@ -2,7 +2,7 @@
   "name": "iris",
   "version": "0.1.0",
   "private": true,
-  "description": "Voice-first AI companion for Star Atlas",
+  "description": "Intelligent voice assistant for Star Atlas commanders",
   "type": "module",
   "scripts": {
     "build": "pnpm -r build",

@@ -1,6 +1,6 @@
 # IRIS - CLAUDE.md
 
-> **Voice-first AI companion for Star Atlas** | *by Arc Forge*
+> **Your guy in the chair for Star Atlas** | *by Arc Forge*
 > **Purpose**: Minimal navigation hub for AI agents (pointers to detailed documentation)
 > **Lifecycle**: Living (target: ~100 lines max)
 
