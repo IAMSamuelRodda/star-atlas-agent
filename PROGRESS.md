@@ -63,33 +63,40 @@
 
 ## Epic 2: Memory Service - User Context & Preferences
 
-**Estimated**: 13 days | **Status**: 🔴
+**Estimated**: 13 days | **Status**: 🟢
 
-### Feature 2.1: SQLite Database Setup (3 days)
+> **Pattern**: sqlite-knowledge-graph from agentic-framework
+> **Reference**: https://github.com/IAMSamuelRodda/agentic-framework/blob/main/patterns/sqlite-knowledge-graph.md
+
+### Feature 2.1: SQLite Database Setup (3 days) 🟢
 | ID | Task | Complexity | Est. | Status |
 |----|------|------------|------|--------|
-| task_2_1_1 | Initialize better-sqlite3 with migrations | 2.2 | 2d | 🔴 |
-| task_2_1_2 | Create users table | 1.5 | 0.5d | 🔴 |
-| task_2_1_3 | Create conversations table with TTL | 1.8 | 0.5d | 🔴 |
+| task_2_1_1 | Initialize better-sqlite3 with migrations | 2.2 | 2d | 🟢 |
+| task_2_1_2 | Create users table | 1.5 | 0.5d | 🟢 |
+| task_2_1_3 | Create conversations table with TTL | 1.8 | 0.5d | 🟢 |
 
-### Feature 2.2: User Preference Management (3 days)
+### Feature 2.2: User Preference Management (3 days) 🟢
 | ID | Task | Complexity | Est. | Status |
 |----|------|------------|------|--------|
-| task_2_2_1 | Implement preference CRUD operations | 1.7 | 2d | 🔴 |
-| task_2_2_2 | Add preference validation | 2.0 | 1d | 🔴 |
+| task_2_2_1 | Implement preference CRUD operations | 1.7 | 2d | 🟢 |
+| task_2_2_2 | Add preference validation | 2.0 | 1d | 🟢 |
 
-### Feature 2.3: Conversation Context Storage (4 days)
+> **Note**: Preferences stored as entities/observations in knowledge graph (e.g., "User → prefers → morning notifications")
+
+### Feature 2.3: Conversation Context Storage (4 days) 🟢
 | ID | Task | Complexity | Est. | Status |
 |----|------|------------|------|--------|
-| task_2_3_1 | Implement message append with limit | 2.0 | 2d | 🔴 |
-| task_2_3_2 | Implement TTL cleanup job | 2.5 | 1d | 🔴 |
-| task_2_3_3 | Add conversation retrieval | 1.8 | 1d | 🔴 |
+| task_2_3_1 | Implement message append with limit | 2.0 | 2d | 🟢 |
+| task_2_3_2 | Implement TTL cleanup job | 2.5 | 1d | 🟢 |
+| task_2_3_3 | Add conversation retrieval | 1.8 | 1d | 🟢 |
 
-### Feature 2.4: Memory Service API (3 days)
+### Feature 2.4: Memory Service API (3 days) 🟢
 | ID | Task | Complexity | Est. | Status |
 |----|------|------------|------|--------|
-| task_2_4_1 | Create memory service module | 2.2 | 2d | 🔴 |
-| task_2_4_2 | Expose memory methods to Agent Core | 1.8 | 1d | 🔴 |
+| task_2_4_1 | Create memory service module | 2.2 | 2d | 🟢 |
+| task_2_4_2 | Expose memory methods to Agent Core | 1.8 | 1d | 🟢 |
+
+> **Implemented**: Knowledge graph (entities/observations/relations), MCP tools (11 tools), conversation TTL, user edit tracking, prose summaries
 
 ---
 

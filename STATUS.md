@@ -3,8 +3,8 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-02 (MVP scope refined)
-**Current Phase**: Implementation (Epic 1 - MCP Server)
+**Last Updated**: 2025-12-02 (Memory Service complete)
+**Current Phase**: Implementation (Epic 2 complete, Epic 3 next)
 **Version**: 0.1.0 (Pre-MVP)
 
 ---
@@ -18,8 +18,9 @@
 | Infrastructure | Done | Using existing DO VPS (640MB+ RAM available) |
 | Monorepo Setup | Done | pnpm workspaces, 5 packages scaffolded |
 | MCP Server Foundation | Done | Feature 1.1 complete (lifecycle, tools, errors) |
+| **Memory Service** | **Done** | Epic 2 complete (knowledge graph, MCP tools, tests) |
 | CI/CD Pipeline | N/A | Main-only workflow; deploy via docker-compose |
-| Test Coverage | Pending | No tests yet |
+| Test Coverage | Partial | 12 tests for memory service |
 | Known Bugs | None | Early implementation |
 | **MVP Scope** | **Reduced** | 3 tasks + 1 epic deferred (see below) |
 
@@ -28,6 +29,14 @@
 ## Current Focus
 
 **Completed (2025-12-02):**
+- **Memory Service (Epic 2) complete**:
+  - SQLite knowledge graph (entities, observations, relations)
+  - MCP tools: 11 tools aligned with Anthropic memory server
+  - Conversation TTL (48h default, cleanup job)
+  - User edit tracking ("remember that..." requests)
+  - Prose summaries with staleness detection
+  - 12 unit tests passing
+  - Pattern extracted to agentic-framework: `patterns/sqlite-knowledge-graph.md`
 - Monorepo initialized with pnpm workspaces (5 packages)
 - MCP Server Foundation (Feature 1.1) complete:
   - TypeScript + MCP SDK setup
@@ -50,12 +59,17 @@
 - Voice service updated to use Chatterbox (self-hosted STT/TTS)
 
 **In Progress:**
-- 🔴 **ARCH-001**: IRIS/CITADEL separation (blocking MCP tool development)
+- 🟡 **ARCH-001**: IRIS/CITADEL separation - decision made (2025-12-02)
+  - MCP tools **stay in IRIS** (wrap Citadel REST API)
+  - Citadel provides REST + WebSocket only
+  - BLOCKED: Waiting for Citadel REST API (Epic 2-3)
 
 **Next Up (MVP scope):**
-- [ ] Create CITADEL repo and move blockchain/game tools
-- [ ] IRIS: Focus on voice service (Chatterbox) + user memory
-- [ ] CITADEL: Own all blockchain/game data tools
+- [ ] **Agent Core (Epic 3)**: Claude Agent SDK integration, session management
+- [ ] **Voice Service (Epic 4)**: Chatterbox STT/TTS (needs spike first)
+- [ ] Web App (Epic 5): React + Vite frontend
+- [ ] CITADEL: REST API for blockchain/game data (Epic 2-3)
+- [ ] IRIS: Update MCP tools to wrap Citadel REST (Epic 8, blocked)
 
 **Deferred from MVP (2025-12-02):**
 - ⏸️ `prepareTransaction` tool - users execute via Star Atlas UI
@@ -110,12 +124,14 @@ None
    - Worktrees for parallel agent work
    - See `CONTRIBUTING.md` for workflow
 
-2. **Begin Implementation**
-   - MCP server first (Solana + Star Atlas data access)
-   - Memory service (SQLite, simple schema)
-   - Agent core (Claude Agent SDK integration)
-   - Voice service (Chatterbox STT/TTS)
-   - Web app (React + Vite frontend)
+2. ✅ **Memory Service** (Complete 2025-12-02)
+   - SQLite knowledge graph with MCP tools
+   - Pattern extracted to agentic-framework
+
+3. **Agent Core (Epic 3)** - Next
+   - Claude Agent SDK integration
+   - Session management
+   - System prompt + memory injection
 
 ---
 
