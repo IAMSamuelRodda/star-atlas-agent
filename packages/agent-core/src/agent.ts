@@ -9,7 +9,6 @@ import {
   query,
   type Query,
   type SDKMessage,
-  type SDKAssistantMessage,
   type SDKResultMessage,
   type SDKSystemMessage,
   type Options,
@@ -245,17 +244,9 @@ export class IrisAgent {
         return null;
 
       case "assistant":
-        // Extract text from assistant message
-        const assistantMsg = msg as SDKAssistantMessage;
-        const contentBlocks = assistantMsg.message.content as Array<{ type: string; text?: string }>;
-        const textBlocks = contentBlocks.filter((b) => b.type === "text" && b.text);
-        if (textBlocks.length > 0) {
-          const text = textBlocks.map((b) => b.text!).join("");
-          return {
-            type: "text",
-            content: text,
-          };
-        }
+        // Skip text extraction - we get text from stream_event deltas
+        // Only assistant messages for tool_use blocks would be processed here
+        // but we handle tools via tool_progress messages instead
         return null;
 
       case "stream_event":

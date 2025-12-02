@@ -119,6 +119,10 @@ export function Chat() {
               if (chunk.sessionId) {
                 setSessionId(chunk.sessionId);
               }
+              // Trigger TTS for voice responses
+              if (text && assistantContent && voiceClientRef.current?.isConnected()) {
+                voiceClientRef.current.synthesize(assistantContent);
+              }
               break;
 
             case "error":

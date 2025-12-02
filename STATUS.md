@@ -3,8 +3,8 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-02 (Voice STT working, TTS next)
-**Current Phase**: Implementation (Voice transcription functional)
+**Last Updated**: 2025-12-02 (Concise responses, duplicate bug fixed, TTS loading)
+**Current Phase**: Implementation (Voice integration in progress)
 **Version**: 0.1.0 (Pre-MVP)
 
 ---
@@ -83,13 +83,15 @@
 - Voice service updated to use Chatterbox (self-hosted STT/TTS)
 
 **In Progress:**
-- 🟡 **Voice Integration** (2025-12-02):
+- 🟢 **Voice Integration** (2025-12-02):
   - ✅ STT (faster-whisper) - **WORKING** - transcribes voice to text
   - ✅ WebSocket bridge - audio streaming from browser functional
   - ✅ Push-to-talk UI - recording and sending audio
-  - ⏳ TTS (Chatterbox) - needs testing, deps installed
-  - ⏳ Response conciseness - current responses too verbose for voice
+  - ✅ TTS (Chatterbox) - **WORKING** - synthesizes speech from text
+  - ✅ Response conciseness - max 2 sentences for TTS
+  - ✅ Duplicate response bug - fixed (skip assistant messages, use stream_event deltas)
   - Note: Running locally (not Docker) with `CUDA_VISIBLE_DEVICES=""`
+  - Note: Chatterbox model ~3GB cached in ~/.cache/huggingface/
 
 - 🟡 **Integration Testing** (2025-12-02):
   - ✅ Agent API (port 3001) - working, tested chat endpoint
@@ -105,8 +107,9 @@
   - BLOCKED: Waiting for Citadel REST API (Epic 2-3)
 
 **Next Up (MVP scope):**
-- [ ] **Voice conciseness**: Make IRIS responses short for TTS (<2 sentences)
-- [ ] **TTS testing**: Test Chatterbox voice synthesis
+- [x] **Voice conciseness**: IRIS responses max 2 sentences for TTS
+- [x] **TTS testing**: Chatterbox voice synthesis working
+- [ ] **End-to-end voice testing**: Test full voice conversation loop
 - [ ] CITADEL: REST API for blockchain/game data (separate repo)
 
 **Deferred from MVP (2025-12-02):**
