@@ -12,6 +12,7 @@ export interface VoiceClientOptions {
   userId: string;
   onStateChange?: (state: VoiceState) => void;
   onTranscription?: (text: string) => void;
+  onSynthesisComplete?: (text: string) => void;
   onError?: (error: string) => void;
 }
 
@@ -25,6 +26,7 @@ export class VoiceClient {
   private nextPlayTime = 0; // For scheduling audio chunks sequentially
   private state: VoiceState = "idle";
   private options: VoiceClientOptions;
+  private pendingSynthesisText: string | null = null; // Track text being spoken
 
   constructor(options: VoiceClientOptions) {
     this.options = options;
@@ -165,6 +167,8 @@ export class VoiceClient {
    * Request speech synthesis.
    */
   synthesize(text: string, exaggeration = 0.5, speechRate = 1.0): void {
+    console.log("[Voice] Synthesize requested:", text.slice(0, 50) + (text.length > 50 ? "..." : ""));
+    this.pendingSynthesisText = text;
     this.send({
       type: "synthesize",
       text,
@@ -224,6 +228,12 @@ export class VoiceClient {
         break;
 
       case "audio_end":
+        // Log and callback with the text that was spoken
+        if (this.pendingSynthesisText) {
+          console.log("[Voice] Synthesis complete:", this.pendingSynthesisText.slice(0, 50) + (this.pendingSynthesisText.length > 50 ? "..." : ""));
+          this.options.onSynthesisComplete?.(this.pendingSynthesisText);
+          this.pendingSynthesisText = null;
+        }
         this.setState("ready");
         break;
 

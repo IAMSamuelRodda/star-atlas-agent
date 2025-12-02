@@ -67,6 +67,10 @@ export function Chat() {
         // When we get a transcription, send it as a chat message
         handleSend(text);
       },
+      onSynthesisComplete: (text) => {
+        // Log spoken text for troubleshooting
+        console.log("[Chat] TTS playback complete:", text);
+      },
       onError: (error) => {
         console.error("[Voice] Error:", error);
       },
