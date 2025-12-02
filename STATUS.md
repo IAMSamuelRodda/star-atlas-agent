@@ -3,8 +3,8 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-02 (Agent Core complete)
-**Current Phase**: Implementation (Epic 3 complete, voice service next)
+**Last Updated**: 2025-12-02 (Voice Service complete)
+**Current Phase**: Implementation (Epic 4 complete, web app next)
 **Version**: 0.1.0 (Pre-MVP)
 
 ---
@@ -16,10 +16,11 @@
 | Planning | Done | Vision alignment complete, architecture refreshed |
 | Architecture Docs | Done | CLAUDE.md, README.md, ARCHITECTURE.md updated for VPS |
 | Infrastructure | Done | Using existing DO VPS (640MB+ RAM available) |
-| Monorepo Setup | Done | pnpm workspaces, 5 packages scaffolded |
+| Monorepo Setup | Done | pnpm workspaces, 6 packages (voice-backend added) |
 | MCP Server Foundation | Done | Feature 1.1 complete (lifecycle, tools, errors) |
 | **Memory Service** | **Done** | Epic 2 complete (knowledge graph, MCP tools, tests) |
 | **Agent Core** | **Done** | Epic 3 complete (Claude Agent SDK, IrisAgent class) |
+| **Voice Service** | **Done** | Epic 4 complete (faster-whisper STT, Chatterbox TTS) |
 | CI/CD Pipeline | N/A | Main-only workflow; deploy via docker-compose |
 | Test Coverage | Partial | 12 tests for memory service |
 | Known Bugs | None | Early implementation |
@@ -30,6 +31,13 @@
 ## Current Focus
 
 **Completed (2025-12-02):**
+- **Voice Service (Epic 4) complete**:
+  - Python voice-backend (FastAPI + faster-whisper + Chatterbox)
+  - Node.js WebSocket bridge for browser audio streaming
+  - STT: faster-whisper with int8 quantization (~200MB for base model)
+  - TTS: Chatterbox with emotion control and voice cloning
+  - Docker Compose orchestration for voice services
+  - Modular architecture: browser → WebSocket → Python backend
 - **Agent Core (Epic 3) complete**:
   - Claude Agent SDK integration (`@anthropic-ai/claude-agent-sdk`)
   - In-process MCP server via `createSdkMcpServer()` (zero subprocess overhead)
@@ -74,7 +82,6 @@
   - BLOCKED: Waiting for Citadel REST API (Epic 2-3)
 
 **Next Up (MVP scope):**
-- [ ] **Voice Service (Epic 4)**: Chatterbox STT/TTS (needs spike first)
 - [ ] **Web App (Epic 5)**: React + Vite frontend with agent API
 - [ ] CITADEL: REST API for blockchain/game data (separate repo)
 - [ ] IRIS: Update MCP tools to wrap Citadel REST (blocked on CITADEL)
@@ -141,9 +148,15 @@ None
    - In-process MCP server with memory + Star Atlas tools
    - IrisAgent class with streaming support
 
-4. **Voice Service (Epic 4)** - Next
-   - Needs spike: Chatterbox deployment patterns
-   - WebRTC signaling for real-time audio
+4. ✅ **Voice Service** (Complete 2025-12-02)
+   - Python voice-backend: faster-whisper (STT) + Chatterbox (TTS)
+   - Node.js WebSocket bridge for browser audio streaming
+   - Docker Compose orchestration
+
+5. **Web App (Epic 5)** - Next
+   - React + Vite frontend
+   - Agent API integration
+   - Voice interface (push-to-talk)
 
 ---
 
