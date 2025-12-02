@@ -3,8 +3,8 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-02 (Integration testing in progress)
-**Current Phase**: Implementation (MVP services running, voice Docker build pending)
+**Last Updated**: 2025-12-02 (Voice STT working, TTS next)
+**Current Phase**: Implementation (Voice transcription functional)
 **Version**: 0.1.0 (Pre-MVP)
 
 ---
@@ -83,13 +83,21 @@
 - Voice service updated to use Chatterbox (self-hosted STT/TTS)
 
 **In Progress:**
+- 🟡 **Voice Integration** (2025-12-02):
+  - ✅ STT (faster-whisper) - **WORKING** - transcribes voice to text
+  - ✅ WebSocket bridge - audio streaming from browser functional
+  - ✅ Push-to-talk UI - recording and sending audio
+  - ⏳ TTS (Chatterbox) - needs testing, deps installed
+  - ⏳ Response conciseness - current responses too verbose for voice
+  - Note: Running locally (not Docker) with `CUDA_VISIBLE_DEVICES=""`
+
 - 🟡 **Integration Testing** (2025-12-02):
   - ✅ Agent API (port 3001) - working, tested chat endpoint
-  - ✅ Web App (port 3000) - serving, chat interface functional
-  - ✅ .env loading - ANTHROPIC_API_KEY wired up
+  - ✅ Web App (port 3002) - serving, chat interface functional
+  - ✅ Voice backend (port 8001) - STT working on CPU
+  - ✅ Voice WebSocket (port 8002) - audio streaming works
   - ✅ Dockerfiles fixed (UID 1000 conflict resolved)
-  - ⏳ Voice services - Docker build in progress (Python ML deps slow)
-  - Branding updated: "guy in the chair" personality
+  - Branding: "guy in the chair" personality
 
 - 🟡 **ARCH-001**: IRIS/CITADEL separation - decision made (2025-12-02)
   - MCP tools **stay in IRIS** (wrap Citadel REST API)
@@ -97,9 +105,9 @@
   - BLOCKED: Waiting for Citadel REST API (Epic 2-3)
 
 **Next Up (MVP scope):**
-- [ ] **Voice Testing**: Complete Docker build, test STT/TTS
+- [ ] **Voice conciseness**: Make IRIS responses short for TTS (<2 sentences)
+- [ ] **TTS testing**: Test Chatterbox voice synthesis
 - [ ] CITADEL: REST API for blockchain/game data (separate repo)
-- [ ] IRIS: Update MCP tools to wrap Citadel REST (blocked on CITADEL)
 
 **Deferred from MVP (2025-12-02):**
 - ⏸️ `prepareTransaction` tool - users execute via Star Atlas UI

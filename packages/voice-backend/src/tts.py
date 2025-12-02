@@ -83,10 +83,8 @@ class TextToSpeech:
                 self._model = ChatterboxTTS.from_pretrained(device=device)
                 logger.info(f"Chatterbox model loaded on {device}")
             except ImportError as e:
-                logger.error(f"Failed to import Chatterbox: {e}")
-                raise RuntimeError(
-                    "Chatterbox TTS not available. Install with: pip install chatterbox-tts"
-                ) from e
+                logger.warning(f"Chatterbox not available: {e}. Using placeholder TTS.")
+                self._model = "placeholder"
         return self._model
 
     def synthesize(
@@ -115,6 +113,16 @@ class TextToSpeech:
                 audio=np.zeros(self._sample_rate // 10, dtype=np.float32),
                 sample_rate=self._sample_rate,
                 duration_seconds=0.1,
+            )
+
+        # Check for placeholder mode (Chatterbox not available)
+        if self.model == "placeholder":
+            logger.warning(f"TTS placeholder mode - no audio for: {text[:50]}...")
+            # Return 1 second of silence
+            return SynthesisResult(
+                audio=np.zeros(self._sample_rate, dtype=np.float32),
+                sample_rate=self._sample_rate,
+                duration_seconds=1.0,
             )
 
         # Use voice reference if provided

@@ -116,10 +116,7 @@ export class VoiceClient {
       const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
       const pcmData = await this.convertToPCM(audioBlob);
 
-      // Send to server
-      this.send({ type: "audio_end" });
-
-      // Send audio data
+      // Send audio data first (before audio_end)
       const base64 = btoa(
         Array.from(new Uint8Array(pcmData))
           .map((b) => String.fromCharCode(b))
@@ -132,6 +129,9 @@ export class VoiceClient {
         type: "audio_chunk",
         data: base64,
       });
+
+      // Now signal end of audio
+      this.send({ type: "audio_end" });
 
       this.setState("processing");
 

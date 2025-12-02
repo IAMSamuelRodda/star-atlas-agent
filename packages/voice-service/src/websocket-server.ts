@@ -27,7 +27,7 @@ export class VoiceWebSocketServer {
     const defaults: VoiceServiceConfig = {
       port: 8002,
       backendUrl: "http://localhost:8001",
-      maxChunkSize: 32768,
+      maxChunkSize: 1048576, // 1MB - MVP sends all audio at once
       sessionTimeout: 300000,
     };
 
