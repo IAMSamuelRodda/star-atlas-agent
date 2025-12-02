@@ -3,8 +3,8 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-02 (Web App complete)
-**Current Phase**: Implementation (Epic 5 complete, MVP ready for testing)
+**Last Updated**: 2025-12-02 (Integration testing in progress)
+**Current Phase**: Implementation (MVP services running, voice Docker build pending)
 **Version**: 0.1.0 (Pre-MVP)
 
 ---
@@ -83,14 +83,21 @@
 - Voice service updated to use Chatterbox (self-hosted STT/TTS)
 
 **In Progress:**
+- 🟡 **Integration Testing** (2025-12-02):
+  - ✅ Agent API (port 3001) - working, tested chat endpoint
+  - ✅ Web App (port 3000) - serving, chat interface functional
+  - ✅ .env loading - ANTHROPIC_API_KEY wired up
+  - ✅ Dockerfiles fixed (UID 1000 conflict resolved)
+  - ⏳ Voice services - Docker build in progress (Python ML deps slow)
+  - Branding updated: "guy in the chair" personality
+
 - 🟡 **ARCH-001**: IRIS/CITADEL separation - decision made (2025-12-02)
   - MCP tools **stay in IRIS** (wrap Citadel REST API)
   - Citadel provides REST + WebSocket only
   - BLOCKED: Waiting for Citadel REST API (Epic 2-3)
 
 **Next Up (MVP scope):**
-- [ ] **Integration Testing**: End-to-end test of all services
-- [ ] **Docker Compose**: Add agent-core and web-app to docker-compose
+- [ ] **Voice Testing**: Complete Docker build, test STT/TTS
 - [ ] CITADEL: REST API for blockchain/game data (separate repo)
 - [ ] IRIS: Update MCP tools to wrap Citadel REST (blocked on CITADEL)
 
