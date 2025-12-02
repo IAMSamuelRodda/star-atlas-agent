@@ -18,6 +18,7 @@
     "@anthropic-ai/claude-agent-sdk": "^0.1.56",
     "@hono/node-server": "^1.13.0",
     "@iris/memory-service": "workspace:*",
+    "dotenv": "^16.4.0",
     "hono": "^4.6.0",
     "zod": "^3.25.0"
   },

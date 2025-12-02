@@ -69,20 +69,23 @@ services:
       - iris-network
 
   # ===========================================================================
-  # Agent Core (TODO)
+  # Agent Core
   # Claude Agent SDK orchestrator
   # ===========================================================================
-  # agent-core:
-  #   build:
-  #     context: .
-  #     dockerfile: packages/agent-core/Dockerfile
-  #   container_name: iris-agent-core
-  #   ports:
-  #     - "8003:8003"
-  #   environment:
-  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-  #   networks:
-  #     - iris-network
+  agent-core:
+    build:
+      context: .
+      dockerfile: packages/agent-core/Dockerfile
+    container_name: iris-agent-core
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - AGENT_API_PORT=3001
+    restart: unless-stopped
+    networks:
+      - iris-network
 
   # ===========================================================================
   # Web App (TODO)
