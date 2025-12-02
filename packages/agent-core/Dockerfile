@@ -38,9 +38,9 @@ COPY --from=build /app/packages/memory-service/dist /app/packages/memory-service
 COPY --from=build /app/packages/memory-service/package.json /app/packages/memory-service/
 COPY --from=build /app/node_modules /app/node_modules
 
-# Create non-root user
-RUN useradd -m -u 1000 iris && chown -R iris:iris /app
-USER iris
+# Use existing node user (UID 1000 in node:20-slim)
+RUN chown -R node:node /app
+USER node
 
 # Data directory for SQLite
 RUN mkdir -p /app/data

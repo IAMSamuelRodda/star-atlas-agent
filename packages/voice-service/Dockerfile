@@ -33,9 +33,9 @@ COPY --from=build /app/packages/voice-service/dist /app/dist
 COPY --from=build /app/packages/voice-service/package.json /app/
 COPY --from=build /app/node_modules /app/node_modules
 
-# Create non-root user
-RUN useradd -m -u 1000 iris && chown -R iris:iris /app
-USER iris
+# Use existing node user (UID 1000 in node:20-slim)
+RUN chown -R node:node /app
+USER node
 
 ENV NODE_ENV=production
 ENV VOICE_WS_PORT=8002
