@@ -18,7 +18,7 @@ IRIS is a voice-first AI assistant for Star Atlas players. Monitor your fleet, o
 - **Voice-First Interface** - Push-to-talk with <500ms response time
 - **Fleet Monitoring** - Real-time alerts for fuel, repairs, and resources
 - **Economic Optimization** - Crafting ROI analysis and market insights
-- **Blockchain Integration** - Live Solana data via WebSocket subscriptions
+- **CITADEL Integration** - Fleet and market data via CITADEL REST API
 - **Secure Transactions** - Explicit wallet approval required (never auto-sign)
 
 ---
