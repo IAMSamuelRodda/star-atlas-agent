@@ -55,6 +55,31 @@ HAIKU_ACK_WARNING_MS = 500         # Warn if Haiku is slow
 AGENT_SDK_REGRESSION_MS = 4000     # Alert if we've regressed to Agent SDK
 
 
+# Known pattern-based acknowledgment texts (from fast-layer.ts getQuickFallback)
+# These are deterministic - if we get different text, the fast layer was bypassed
+KNOWN_PATTERN_ACKS = {
+    "fleet": "Checking your fleet status.",
+    "ship": "Checking your fleet status.",
+    "wallet": "Let me check that for you.",
+    "balance": "Let me check that for you.",
+    "account": "Let me check that for you.",
+    "market": "Looking up the market data.",
+    "price": "Looking up the market data.",
+    "trade": "Looking up the market data.",
+    "mission": "Let me check on that.",
+    "quest": "Let me check on that.",
+    "task": "Let me check on that.",
+    "status": "Checking the status now.",
+    "update": "Checking the status now.",
+    "progress": "Checking the status now.",
+    "question_prefix": "Let me look into that.",  # what/where/when/why/who/how
+    "request_prefix": "Sure, one moment.",  # tell me/show me/find/search
+    "help_pattern": "Sure, I can help with that.",  # help/how do/how can i
+    "action_prefix": "On it.",  # do/make/create/start/stop/enable
+    "generic_fallback": "Got it, working on that.",  # >10 chars, no pattern
+}
+
+
 # Test cases with expected behavior
 TEST_CASES = [
     # Pattern-matched messages (should be instant)
@@ -62,50 +87,58 @@ TEST_CASES = [
         "message": "Check my fleet status",
         "expected_path": "pattern",
         "pattern_keyword": "fleet",
+        "expected_ack": "Checking your fleet status.",
         "description": "Fleet keyword - domain pattern",
     },
     {
         "message": "Show me my wallet balance",
         "expected_path": "pattern",
         "pattern_keyword": "wallet",
+        "expected_ack": "Let me check that for you.",
         "description": "Wallet keyword - domain pattern",
     },
     {
         "message": "What is the current market price?",
         "expected_path": "pattern",
         "pattern_keyword": "what",
+        "expected_ack": "Looking up the market data.",  # matches "market" first
         "description": "Question prefix - starts with 'what'",
     },
     {
         "message": "Tell me about my missions",
         "expected_path": "pattern",
         "pattern_keyword": "tell me",
+        "expected_ack": "Let me check on that.",  # matches "mission" first
         "description": "Request prefix - starts with 'tell me'",
     },
     {
         "message": "How do I configure this feature?",
         "expected_path": "pattern",
         "pattern_keyword": "how do",
+        "expected_ack": "Let me look into that.",
         "description": "Help pattern - 'how do'",
     },
     {
         "message": "Create a new trading strategy",
         "expected_path": "pattern",
         "pattern_keyword": "create",
+        "expected_ack": "On it.",
         "description": "Action prefix - starts with 'create'",
     },
 
-    # Non-pattern messages (should go to Haiku)
+    # Non-pattern messages (should go to Haiku or generic fallback)
     {
         "message": "I was wondering about something",
         "expected_path": "haiku",
         "pattern_keyword": None,
+        "expected_ack": None,  # Haiku generates dynamic text
         "description": "No clear pattern - should use Haiku",
     },
     {
         "message": "That's interesting information",
         "expected_path": "haiku",
         "pattern_keyword": None,
+        "expected_ack": None,  # Haiku generates dynamic text
         "description": "Statement - no pattern match",
     },
 
@@ -114,6 +147,7 @@ TEST_CASES = [
         "message": "Let me think about that for a moment",
         "expected_path": "pattern",  # >10 chars fallback
         "pattern_keyword": ">10chars",
+        "expected_ack": "Got it, working on that.",
         "description": "Long message - generic fallback",
     },
 
@@ -122,6 +156,7 @@ TEST_CASES = [
         "message": "ok cool",
         "expected_path": "none",
         "pattern_keyword": None,
+        "expected_ack": None,
         "description": "Short message - may skip ack",
     },
 ]
@@ -133,6 +168,7 @@ class TestResult:
     message: str
     description: str
     expected_path: str  # "pattern", "haiku", or "none"
+    expected_ack: Optional[str] = None  # Expected ack text (for pattern validation)
 
     # Measured values
     ack_received: bool = False
@@ -141,6 +177,10 @@ class TestResult:
 
     # Inferred path based on latency
     inferred_path: str = "unknown"
+
+    # Code path validation
+    ack_text_matched: bool = False  # True if ack text matches expected
+    fast_layer_bypassed: bool = False  # True if fast layer was skipped
 
     # Validation
     passed: bool = False
@@ -160,9 +200,22 @@ class TestResult:
 
         if not self.ack_received:
             self.passed = False
-            self.failure_reason = f"Expected {self.expected_path} ack but got none"
+            self.failure_reason = f"Expected {self.expected_path} ack but got none - FAST LAYER BYPASSED?"
             self.inferred_path = "none"
+            self.fast_layer_bypassed = True
             return
+
+        # Validate ack text matches expected (code path validation)
+        if self.expected_ack:
+            self.ack_text_matched = self.ack_text == self.expected_ack
+            if not self.ack_text_matched:
+                # Check if it's a known pattern ack (fast layer working but different pattern matched)
+                if self.ack_text in KNOWN_PATTERN_ACKS.values():
+                    # Different pattern matched - not a bypass, just different logic path
+                    self.ack_text_matched = True  # Allow it, pattern matching still working
+                else:
+                    # Unknown ack text - possibly Haiku fallback or bypass
+                    self.fast_layer_bypassed = self.ack_latency_ms > HAIKU_ACK_WARNING_MS
 
         # Infer which path was taken based on latency
         if self.ack_latency_ms < PATTERN_ACK_THRESHOLD_MS:
@@ -254,6 +307,7 @@ def run_test_case(case: dict) -> TestResult:
         message=case["message"],
         description=case["description"],
         expected_path=case["expected_path"],
+        expected_ack=case.get("expected_ack"),
     )
 
     result.ack_received, result.ack_latency_ms, result.ack_text = measure_acknowledgment(case["message"])
@@ -272,9 +326,22 @@ def print_result(result: TestResult, idx: int):
     print(f"    Expected: {result.expected_path:<8} | Got: {result.inferred_path}")
 
     if result.ack_received:
-        print(f"    Latency:  {result.ack_latency_ms:>7.1f}ms | Ack: \"{result.ack_text}\"")
+        # Show ack text match status for pattern tests
+        ack_match = ""
+        if result.expected_ack:
+            if result.ack_text == result.expected_ack:
+                ack_match = " ✓"
+            elif result.ack_text_matched:
+                ack_match = " ~"  # Different pattern but still valid
+            else:
+                ack_match = " ✗"  # Unexpected text
+        print(f"    Latency:  {result.ack_latency_ms:>7.1f}ms | Ack: \"{result.ack_text}\"{ack_match}")
     else:
         print(f"    Latency:  N/A (no acknowledgment)")
+
+    # Show bypass warning
+    if result.fast_layer_bypassed:
+        print(f"    ⚠️  FAST LAYER BYPASS DETECTED")
 
     print(f"    Status:   {status_emoji} {status}")
     if result.failure_reason:
@@ -391,6 +458,39 @@ CHECK: packages/agent-core/src/fast-layer.ts
   - Should NOT use Agent SDK's query() function
 """)
         sys.exit(1)
+
+    # Check for fast layer bypass (no ack when expected)
+    fast_layer_bypassed = any(r.fast_layer_bypassed for r in results)
+
+    if fast_layer_bypassed:
+        print("\n" + "=" * 70)
+        print("⚠️  FAST LAYER BYPASS DETECTED!")
+        print("=" * 70)
+        print("""
+One or more test cases did not receive an acknowledgment when expected.
+This indicates the fast layer may have been bypassed entirely.
+
+CHECK: packages/agent-core/src/agent.ts
+  - Verify needsAcknowledgment() is being called
+  - Verify getAcknowledgment() is being called
+  - Verify acknowledgment chunk is being yielded
+
+CHECK: packages/agent-core/src/fast-layer.ts
+  - Verify getQuickFallback() pattern matching is working
+  - Verify generateQuickAcknowledgment() is being called as fallback
+""")
+        sys.exit(1)
+
+    # Code path validation summary
+    pattern_with_acks = [r for r in results if r.expected_path == "pattern" and r.expected_ack]
+    if pattern_with_acks:
+        matched = sum(1 for r in pattern_with_acks if r.ack_text_matched)
+        print(f"\nCode path validation:")
+        print(f"  Pattern ack text matched: {matched}/{len(pattern_with_acks)}")
+        if matched == len(pattern_with_acks):
+            print(f"  Status:  ✅ All pattern responses correct")
+        else:
+            print(f"  Status:  ⚠️  Some patterns returned unexpected text")
 
     # Final verdict
     print()
