@@ -8,6 +8,8 @@
  * Usage:
  *   npx tsx scripts/benchmark-narrator-interactive.ts
  *   npx tsx scripts/benchmark-narrator-interactive.ts --provider haiku
+ *   npx tsx scripts/benchmark-narrator-interactive.ts --model deepseek-r1:14b
+ *   npx tsx scripts/benchmark-narrator-interactive.ts --model qwq:32b
  */
 
 import { spawn } from "child_process";
@@ -133,10 +135,11 @@ const TEST_SNIPPETS: Snippet[] = [
 
 async function runInteractiveBenchmark(
   provider: "ollama" | "haiku",
-  verbosity: VerbosityLevel
+  verbosity: VerbosityLevel,
+  model?: string
 ): Promise<void> {
   console.log("\n🎙️  INTERACTIVE NARRATOR BENCHMARK");
-  console.log(`Provider: ${provider.toUpperCase()}`);
+  console.log(`Provider: ${provider.toUpperCase()}${model ? ` (${model})` : ""}`);
   console.log(`Verbosity: ${verbosity}`);
   console.log("=".repeat(60));
 
@@ -145,7 +148,7 @@ async function runInteractiveBenchmark(
   await synthesizeAndPlay("Starting narrator test. Listen for vocalizations.");
 
   const narrator: Narrator = provider === "ollama"
-    ? new OllamaNarrator()
+    ? new OllamaNarrator(model)  // Pass custom model
     : new HaikuNarrator();
 
   narrator.configure({ verbosity });
@@ -203,6 +206,7 @@ async function main(): Promise<void> {
 
   let provider: "ollama" | "haiku" = "ollama";
   let verbosity: VerbosityLevel = "normal";
+  let model: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--provider" && args[i + 1]) {
@@ -210,6 +214,9 @@ async function main(): Promise<void> {
     }
     if (args[i] === "--verbosity" && args[i + 1]) {
       verbosity = args[++i] as VerbosityLevel;
+    }
+    if (args[i] === "--model" && args[i + 1]) {
+      model = args[++i];
     }
   }
 
@@ -223,7 +230,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  await runInteractiveBenchmark(provider, verbosity);
+  await runInteractiveBenchmark(provider, verbosity, model);
 }
 
 main().catch((error) => {
