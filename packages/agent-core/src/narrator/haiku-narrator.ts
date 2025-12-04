@@ -37,22 +37,47 @@ export class HaikuNarrator extends BaseNarrator {
 
   /**
    * Evaluate a snippet using Claude Haiku.
+   * Includes detailed timing for latency diagnosis.
    */
   protected async evaluateWithLLM(snippet: Snippet): Promise<VocalizationResult> {
+    const timings = {
+      promptBuild: 0,
+      apiCall: 0,
+      parse: 0,
+    };
+
     try {
+      // Time prompt construction
+      const t0 = performance.now();
+      const prompt = this.buildEvaluationPrompt(snippet);
+      timings.promptBuild = performance.now() - t0;
+
+      // Time API call
+      const t1 = performance.now();
       const response = await this.client.messages.create({
         model: this.model,
         max_tokens: 60,
         system: NARRATOR_SYSTEM_PROMPT,
         messages: [
-          { role: "user", content: this.buildEvaluationPrompt(snippet) },
+          { role: "user", content: prompt },
         ],
       });
+      timings.apiCall = performance.now() - t1;
 
+      // Time parsing
+      const t2 = performance.now();
       const text =
         response.content[0].type === "text" ? response.content[0].text : "";
+      const result = this.parseResponse(text);
+      timings.parse = performance.now() - t2;
 
-      return this.parseResponse(text);
+      // Log timing breakdown (helps diagnose latency issues)
+      console.log(
+        `[HaikuNarrator] Timing: prompt=${timings.promptBuild.toFixed(0)}ms, ` +
+        `api=${timings.apiCall.toFixed(0)}ms, parse=${timings.parse.toFixed(0)}ms`
+      );
+
+      return result;
     } catch (error) {
       console.error("[HaikuNarrator] Evaluation failed:", error);
 
@@ -85,7 +110,7 @@ export class HaikuNarrator extends BaseNarrator {
       const text =
         response.content[0].type === "text" ? response.content[0].text : "";
 
-      return text.trim() || "Working on a few things.";
+      return this.cleanSummaryResponse(text) || "Working on a few things.";
     } catch (error) {
       console.error("[HaikuNarrator] Summary failed:", error);
       return this.getFallbackSummary();

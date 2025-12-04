@@ -122,7 +122,7 @@ export class OllamaNarrator extends BaseNarrator {
         },
       });
 
-      return response.message.content.trim();
+      return this.cleanSummaryResponse(response.message.content);
     } catch (error) {
       console.error("[OllamaNarrator] Summary failed:", error);
       return this.getFallbackSummary();

@@ -242,17 +242,31 @@ export abstract class BaseNarrator implements Narrator {
 
   /**
    * Parse LLM response into VocalizationResult.
+   * Handles multi-line responses where reasoning follows the decision.
    */
   protected parseResponse(response: string): VocalizationResult {
     const trimmed = response.trim();
 
-    if (trimmed.toUpperCase() === "SILENT") {
+    // Get first line (Haiku sometimes adds reasoning on subsequent lines)
+    const firstLine = trimmed.split("\n")[0].trim();
+
+    // Check for SILENT (with or without trailing explanation)
+    if (firstLine.toUpperCase() === "SILENT" || firstLine.toUpperCase().startsWith("SILENT")) {
       return { action: "silent" };
     }
 
-    const match = trimmed.match(/^VOCALIZE:\s*(.+)$/is);
+    // Check for VOCALIZE on first line
+    const match = firstLine.match(/^VOCALIZE:\s*(.+)$/i);
     if (match) {
       let utterance = match[1].trim();
+
+      // Remove trailing quotes if present
+      if (utterance.endsWith('"') && !utterance.startsWith('"')) {
+        utterance = utterance.slice(0, -1);
+      }
+      if (utterance.startsWith('"') && utterance.endsWith('"')) {
+        utterance = utterance.slice(1, -1);
+      }
 
       // Enforce max length
       if (utterance.length > this.config.maxUtteranceLength) {
@@ -265,8 +279,18 @@ export abstract class BaseNarrator implements Narrator {
       };
     }
 
+    // Also check full response for VOCALIZE pattern (in case it's on a later line)
+    const fullMatch = trimmed.match(/^VOCALIZE:\s*(.+?)(?:\n|$)/im);
+    if (fullMatch) {
+      let utterance = fullMatch[1].trim();
+      if (utterance.length > this.config.maxUtteranceLength) {
+        utterance = utterance.slice(0, this.config.maxUtteranceLength - 3) + "...";
+      }
+      return { action: "vocalize", utterance };
+    }
+
     // Default to silent if we can't parse
-    console.warn("[Narrator] Failed to parse response:", response);
+    console.warn("[Narrator] Failed to parse response:", response.slice(0, 100));
     return { action: "silent" };
   }
 
@@ -307,6 +331,27 @@ export abstract class BaseNarrator implements Narrator {
 RECENT ACTIVITY:
 ${this.formatBuffer()}
 
-Respond with a brief, casual summary:`;
+IMPORTANT: Respond with ONLY a brief, casual summary. Do NOT use "VOCALIZE:" or "SILENT" format.
+Just give a natural response like you're talking to a friend:`;
+  }
+
+  /**
+   * Clean up summary response (strip any accidental formatting).
+   */
+  protected cleanSummaryResponse(response: string): string {
+    let cleaned = response.trim();
+
+    // Strip "VOCALIZE:" prefix if model accidentally used it
+    const match = cleaned.match(/^VOCALIZE:\s*(.+)$/is);
+    if (match) {
+      cleaned = match[1].trim();
+    }
+
+    // Remove quotes if wrapped
+    if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+      cleaned = cleaned.slice(1, -1);
+    }
+
+    return cleaned;
   }
 }
