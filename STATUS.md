@@ -3,7 +3,7 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-05 (Python native client, VAD integration)
+**Last Updated**: 2025-12-05 (GUI VAD mode, ffmpeg fallback)
 **Current Phase**: Implementation (Native client development)
 **Version**: 0.1.0 (Pre-MVP)
 
@@ -247,20 +247,26 @@ None
   - GUI (DearPyGui): Visual interface with waveform, transcript, config
 - **GUI features** (`python iris_local.py --gui`):
   - Real-time waveform visualizer
-  - PTT button and VAD toggle
+  - PTT button and VAD toggle (both now functional)
   - Conversation transcript display
   - Pipeline status indicators (STT/LLM/TTS)
   - Config panel (model, voice, max tokens)
+- **ffmpeg audio fallback** (PipeWire compatibility):
+  - Auto-detects when sounddevice can't capture from PipeWire
+  - Falls back to `ffmpeg -f pulse -i default` for audio capture
+  - `--ffmpeg` CLI flag to force ffmpeg mode
+  - Enables USB wireless headsets (e.g., RIG 800HX) that only work via PipeWire
 - **Benchmark results** (warm components):
   - First audio: **96-123ms** (vs 300-500ms with web stack)
   - LLM first token: 73-78ms
   - TTS first chunk: 23-45ms
 - **Architecture**: Bypasses all network infrastructure
   ```
-  Microphone → sounddevice → VAD → STT → LLM → TTS → sounddevice → Speaker
+  Microphone → ffmpeg/sounddevice → VAD → STT → LLM → TTS → sounddevice → Speaker
   ```
 - **Dependencies added**: `sounddevice` (local), `dearpygui` (gui) optional extras
-- **Usage**: `python iris_local.py --gui` for graphical interface
+- **Usage**: `python iris_local.py --gui --ffmpeg` for graphical interface with PipeWire
+- **Known limitation**: Cannot interrupt IRIS mid-response (see DESIGN-adaptive-verbosity.md)
 - **Future**: IPC for game integration (see ASP-003 in ISSUES.md)
 
 **Streaming Stress Test & Benchmarks (2025-12-05)**

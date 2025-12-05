@@ -90,6 +90,8 @@ class GUIState:
     model: str = "qwen2.5:7b"
     voice: str = "af_heart"
     max_tokens: int = 150
+    input_device: int | None = None
+    output_device: int | None = None
 
 
 # ==============================================================================
@@ -102,6 +104,24 @@ class IrisGUI:
     # Available models and voices
     MODELS = ["qwen2.5:7b", "mistral:7b", "llama3.1:8b", "phi3:mini"]
     VOICES = ["af_heart", "af_bella", "af_nicole", "am_adam", "am_michael"]
+
+    @staticmethod
+    def get_audio_devices():
+        """Get available audio input and output devices."""
+        import sounddevice as sd
+        devices = sd.query_devices()
+
+        input_devices = [("Default", None)]
+        output_devices = [("Default", None)]
+
+        for i, dev in enumerate(devices):
+            name = f"{i}: {dev['name'][:30]}"
+            if dev['max_input_channels'] > 0:
+                input_devices.append((name, i))
+            if dev['max_output_channels'] > 0:
+                output_devices.append((name, i))
+
+        return input_devices, output_devices
 
     # Colors (RGBA 0-255)
     COLOR_BG = (30, 30, 40, 255)
@@ -123,6 +143,15 @@ class IrisGUI:
         self.state = GUIState()
         self._audio_queue: queue.Queue[np.ndarray] = queue.Queue()
         self._running = False
+
+        # VAD state
+        self._vad_active = False
+        self._vad_thread = None
+
+        # Get available audio devices
+        self.input_devices, self.output_devices = self.get_audio_devices()
+        self.input_device_names = [d[0] for d in self.input_devices]
+        self.output_device_names = [d[0] for d in self.output_devices]
 
         # Callbacks
         self.on_ptt_start: Callable[[], None] | None = None
@@ -267,6 +296,7 @@ class IrisGUI:
 
     def _create_config_section(self):
         """Create the configuration panel."""
+        # First row: Model, Voice, Max Tokens
         with dpg.group(horizontal=True):
             dpg.add_text("Config:", color=self.COLOR_TEXT_DIM)
             dpg.add_spacer(width=10)
@@ -304,6 +334,34 @@ class IrisGUI:
                 max_value=500,
                 tag="max_tokens_input",
                 callback=self._on_max_tokens_change
+            )
+
+        # Second row: Audio devices
+        dpg.add_spacer(height=5)
+        with dpg.group(horizontal=True):
+            dpg.add_text("Audio:", color=self.COLOR_TEXT_DIM)
+            dpg.add_spacer(width=10)
+
+            # Input device selector
+            dpg.add_text("Input", color=self.COLOR_TEXT_DIM)
+            dpg.add_combo(
+                self.input_device_names,
+                default_value=self.input_device_names[0],
+                width=200,
+                tag="input_device_combo",
+                callback=self._on_input_device_change
+            )
+
+            dpg.add_spacer(width=20)
+
+            # Output device selector
+            dpg.add_text("Output", color=self.COLOR_TEXT_DIM)
+            dpg.add_combo(
+                self.output_device_names,
+                default_value=self.output_device_names[0],
+                width=200,
+                tag="output_device_combo",
+                callback=self._on_output_device_change
             )
 
     def _apply_theme(self):
@@ -373,6 +431,32 @@ class IrisGUI:
         if self.iris:
             self.iris.config.max_tokens = app_data
 
+    def _on_input_device_change(self, sender, app_data):
+        """Handle input device selection change."""
+        # Find the device index from the name
+        for name, idx in self.input_devices:
+            if name == app_data:
+                self.state.input_device = idx
+                if self.iris:
+                    self.iris.config.input_device = idx
+                device_str = f"Input: {app_data}"
+                self._update_status(device_str)
+                logger.info(f"[Audio] {device_str}")
+                break
+
+    def _on_output_device_change(self, sender, app_data):
+        """Handle output device selection change."""
+        # Find the device index from the name
+        for name, idx in self.output_devices:
+            if name == app_data:
+                self.state.output_device = idx
+                if self.iris:
+                    self.iris.config.output_device = idx
+                device_str = f"Output: {app_data}"
+                self._update_status(device_str)
+                logger.info(f"[Audio] {device_str}")
+                break
+
     # ==========================================================================
     # Recording Control
     # ==========================================================================
@@ -397,14 +481,146 @@ class IrisGUI:
             self.on_ptt_stop()
 
     def _start_vad_listening(self):
-        """Start VAD-based listening."""
-        # Implementation would start the VAD listening loop
-        pass
+        """Start VAD-based listening with ffmpeg audio capture."""
+        if self._vad_thread is not None and self._vad_thread.is_alive():
+            return  # Already running
+
+        self._vad_active = True
+        self._vad_thread = threading.Thread(target=self._vad_loop, daemon=True)
+        self._vad_thread.start()
+        logger.info("[VAD] Started always-listening mode")
 
     def _stop_vad_listening(self):
         """Stop VAD-based listening."""
-        # Implementation would stop the VAD listening loop
-        pass
+        self._vad_active = False
+        if self._vad_thread is not None:
+            self._vad_thread.join(timeout=1)
+            self._vad_thread = None
+        logger.info("[VAD] Stopped always-listening mode")
+
+    def _vad_loop(self):
+        """VAD listening loop using ffmpeg for audio capture."""
+        import subprocess
+
+        if self.iris is None:
+            logger.error("[VAD] No IRIS instance available")
+            return
+
+        # Audio buffer for speech detection
+        audio_buffer = []
+        is_speaking = False
+        silence_samples = 0
+        silence_threshold = int(0.5 * 16000)  # 0.5s silence to end
+        min_samples = int(0.3 * 16000)  # Minimum 0.3s speech
+        chunk_samples = 512
+
+        # Start ffmpeg process for continuous capture
+        cmd = [
+            "ffmpeg",
+            "-f", "pulse",
+            "-i", "default",
+            "-ar", "16000",
+            "-ac", "1",
+            "-f", "s16le",
+            "-loglevel", "error",
+            "pipe:1"
+        ]
+
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        bytes_per_chunk = chunk_samples * 2  # 16-bit = 2 bytes
+
+        try:
+            while self._vad_active and process.poll() is None:
+                # Read chunk from ffmpeg
+                data = process.stdout.read(bytes_per_chunk)
+                if not data:
+                    break
+
+                # Convert to float32
+                audio_int16 = np.frombuffer(data, dtype=np.int16)
+                chunk = audio_int16.astype(np.float32) / 32768.0
+
+                # Update waveform display
+                self._audio_queue.put(chunk)
+
+                # Run VAD
+                is_speech, confidence = self.iris.vad.is_speech(chunk)
+
+                if is_speech:
+                    if not is_speaking:
+                        logger.info(f"[VAD] Speech detected (confidence: {confidence:.2f})")
+                        is_speaking = True
+                        audio_buffer = []
+                        self._update_status("Listening...", self.COLOR_ACCENT)
+
+                    audio_buffer.append(chunk)
+                    silence_samples = 0
+                else:
+                    if is_speaking:
+                        silence_samples += len(chunk)
+                        audio_buffer.append(chunk)
+
+                        if silence_samples >= silence_threshold:
+                            # Speech ended - process it
+                            is_speaking = False
+
+                            if audio_buffer:
+                                audio = np.concatenate(audio_buffer)
+
+                                if len(audio) >= min_samples:
+                                    duration = len(audio) / 16000
+                                    logger.info(f"[VAD] Speech ended ({duration:.1f}s)")
+
+                                    # Process in background
+                                    threading.Thread(
+                                        target=self._process_vad_audio,
+                                        args=(audio,),
+                                        daemon=True
+                                    ).start()
+
+                            audio_buffer = []
+                            silence_samples = 0
+                            self._update_status("VAD: Listening...", self.COLOR_SUCCESS)
+        finally:
+            process.terminate()
+            process.wait()
+
+    def _process_vad_audio(self, audio: np.ndarray):
+        """Process audio captured by VAD."""
+        try:
+            self._set_pipeline_status("stt", "active")
+
+            # STT
+            text = self.iris.transcribe(audio)
+            if text.strip():
+                self.add_message("user", text)
+
+                # LLM
+                self._set_pipeline_status("stt", "done")
+                self._set_pipeline_status("llm", "active")
+
+                response = self.iris._call_llm(text)
+
+                # TTS
+                self._set_pipeline_status("llm", "done")
+                self._set_pipeline_status("tts", "active")
+
+                self.add_message("assistant", response)
+                self.iris.speak(response)
+
+                self._set_pipeline_status("tts", "done")
+            else:
+                self._update_status("No speech detected", self.COLOR_ERROR)
+
+        except Exception as e:
+            logger.exception("VAD processing error")
+            self._update_status(f"Error: {e}", self.COLOR_ERROR)
+        finally:
+            self._set_pipeline_status("stt", "idle")
+            self._set_pipeline_status("llm", "idle")
+            self._set_pipeline_status("tts", "idle")
+            if self._vad_active:
+                self._update_status("VAD: Listening...", self.COLOR_SUCCESS)
 
     # ==========================================================================
     # UI Updates
@@ -492,6 +708,7 @@ class IrisGUI:
     def stop(self):
         """Stop the GUI."""
         self._running = False
+        self._stop_vad_listening()
 
 
 # ==============================================================================

@@ -85,6 +85,8 @@ class IrisConfig:
     sample_rate_out: int = 24000  # Speaker output (Kokoro outputs 24kHz)
     channels_in: int = 1
     channels_out: int = 1
+    input_device: int | None = None   # None = default, or device index
+    output_device: int | None = None  # None = default, or device index
 
     # LLM
     ollama_url: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
@@ -174,9 +176,10 @@ class SileroVAD:
 
 class AudioIO:
     """
-    Direct audio I/O using sounddevice.
+    Direct audio I/O using sounddevice or ffmpeg fallback.
 
     Zero network overhead - talks directly to hardware.
+    Uses ffmpeg for PipeWire compatibility when sounddevice fails.
     """
 
     def __init__(self, config: IrisConfig):
@@ -185,20 +188,140 @@ class AudioIO:
         self.config = config
         self._recording = False
         self._audio_queue: queue.Queue[np.ndarray] = queue.Queue()
+        self._use_ffmpeg = False
+        self._ffmpeg_process = None
+
+        # Auto-detect if we need ffmpeg fallback (PipeWire without direct device)
+        if config.input_device is None:
+            self._use_ffmpeg = self._should_use_ffmpeg()
+
+    def _should_use_ffmpeg(self) -> bool:
+        """
+        Detect if we need ffmpeg fallback for audio capture.
+
+        Returns True if:
+        - Running on PipeWire and sounddevice captures silence
+        - No direct ALSA device available
+        """
+        # Check if ffmpeg is available
+        import subprocess
+        try:
+            subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            logger.debug("[Audio] ffmpeg not available, using sounddevice")
+            return False
+
+        # Check if PipeWire is running
+        try:
+            result = subprocess.run(["pgrep", "-x", "pipewire"], capture_output=True)
+            if result.returncode != 0:
+                logger.debug("[Audio] PipeWire not running, using sounddevice")
+                return False
+        except FileNotFoundError:
+            return False
+
+        # Try a quick sounddevice capture test
+        try:
+            test_audio = self.sd.rec(
+                int(0.1 * self.config.sample_rate_in),  # 100ms test
+                samplerate=self.config.sample_rate_in,
+                channels=self.config.channels_in,
+                dtype='float32',
+            )
+            self.sd.wait()
+            peak = np.max(np.abs(test_audio))
+
+            # If peak is extremely low, sounddevice isn't getting real audio
+            if peak < 0.0001:
+                logger.info("[Audio] sounddevice capturing silence - enabling ffmpeg fallback")
+                return True
+            else:
+                logger.debug(f"[Audio] sounddevice working (peak={peak:.4f})")
+                return False
+        except Exception as e:
+            logger.warning(f"[Audio] sounddevice test failed: {e} - enabling ffmpeg fallback")
+            return True
 
     def list_devices(self):
         """List available audio devices."""
         print(self.sd.query_devices())
 
+    def _record_with_ffmpeg(self, on_chunk: Callable[[np.ndarray], None] = None) -> np.ndarray:
+        """
+        Record audio using ffmpeg (PipeWire/PulseAudio fallback).
+
+        Uses: ffmpeg -f pulse -i default -ar 16000 -ac 1 -f s16le pipe:1
+        """
+        import subprocess
+
+        chunks = []
+        chunk_samples = 512  # Match sounddevice blocksize
+
+        # Start ffmpeg process
+        cmd = [
+            "ffmpeg",
+            "-f", "pulse",
+            "-i", "default",
+            "-ar", str(self.config.sample_rate_in),
+            "-ac", str(self.config.channels_in),
+            "-f", "s16le",  # Raw 16-bit little-endian PCM
+            "-loglevel", "error",
+            "pipe:1"
+        ]
+
+        logger.debug(f"[Audio] Starting ffmpeg: {' '.join(cmd)}")
+        self._ffmpeg_process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        bytes_per_sample = 2  # 16-bit = 2 bytes
+        bytes_per_chunk = chunk_samples * bytes_per_sample
+
+        try:
+            while self._recording and self._ffmpeg_process.poll() is None:
+                # Read chunk from ffmpeg stdout
+                data = self._ffmpeg_process.stdout.read(bytes_per_chunk)
+                if not data:
+                    break
+
+                # Convert to float32 numpy array
+                audio_int16 = np.frombuffer(data, dtype=np.int16)
+                chunk = audio_int16.astype(np.float32) / 32768.0
+
+                chunks.append(chunk)
+                if on_chunk:
+                    on_chunk(chunk)
+        finally:
+            # Cleanup
+            if self._ffmpeg_process:
+                self._ffmpeg_process.terminate()
+                self._ffmpeg_process.wait()
+                self._ffmpeg_process = None
+
+        if chunks:
+            return np.concatenate(chunks)
+        return np.array([], dtype=np.float32)
+
     def record_until_release(self, on_chunk: Callable[[np.ndarray], None] = None) -> np.ndarray:
         """
         Record audio until stopped.
 
+        Uses ffmpeg fallback automatically if PipeWire detected and sounddevice fails.
+
         Returns:
             Audio samples as float32 numpy array
         """
-        chunks = []
         self._recording = True
+
+        # Use ffmpeg fallback if enabled
+        if self._use_ffmpeg:
+            logger.debug("[Audio] Recording with ffmpeg (PipeWire mode)")
+            return self._record_with_ffmpeg(on_chunk)
+
+        # Standard sounddevice recording
+        chunks = []
 
         def callback(indata, frames, time_info, status):
             if status:
@@ -210,6 +333,7 @@ class AudioIO:
                     on_chunk(chunk)
 
         with self.sd.InputStream(
+            device=self.config.input_device,
             samplerate=self.config.sample_rate_in,
             channels=self.config.channels_in,
             dtype='float32',
@@ -226,6 +350,9 @@ class AudioIO:
     def stop_recording(self):
         """Stop the current recording."""
         self._recording = False
+        # Also terminate ffmpeg if running
+        if self._ffmpeg_process:
+            self._ffmpeg_process.terminate()
 
     def play(self, audio: np.ndarray, sample_rate: int = None):
         """
@@ -242,7 +369,7 @@ class AudioIO:
         if audio.dtype == np.int16:
             audio = audio.astype(np.float32) / 32768.0
 
-        self.sd.play(audio, sample_rate)
+        self.sd.play(audio, sample_rate, device=self.config.output_device)
         self.sd.wait()  # Block until done
 
     def play_async(self, audio: np.ndarray, sample_rate: int = None):
@@ -253,7 +380,7 @@ class AudioIO:
         if audio.dtype == np.int16:
             audio = audio.astype(np.float32) / 32768.0
 
-        self.sd.play(audio, sample_rate)
+        self.sd.play(audio, sample_rate, device=self.config.output_device)
 
 
 # ==============================================================================
@@ -396,7 +523,8 @@ class IrisLocal:
     def transcribe(self, audio: np.ndarray) -> str:
         """Transcribe audio to text."""
         start = time.perf_counter()
-        result = self.stt.transcribe(audio, beam_size=1)
+        # Disable faster-whisper's internal VAD - we use Silero VAD externally
+        result = self.stt.transcribe(audio, beam_size=1, vad_filter=False)
         elapsed = (time.perf_counter() - start) * 1000
         logger.info(f"[STT] {elapsed:.0f}ms: \"{result.text}\"")
         return result.text
@@ -792,6 +920,12 @@ Examples:
                        help="Maximum tokens in LLM response")
     parser.add_argument("--list-devices", action="store_true",
                        help="List available audio devices and exit")
+    parser.add_argument("--input-device", type=int, default=None,
+                       help="Input device index (see --list-devices)")
+    parser.add_argument("--output-device", type=int, default=None,
+                       help="Output device index (see --list-devices)")
+    parser.add_argument("--ffmpeg", action="store_true",
+                       help="Force ffmpeg for audio capture (PipeWire fallback)")
     parser.add_argument("--no-warmup", action="store_true",
                        help="Skip component warmup")
     parser.add_argument("--debug", action="store_true",
@@ -812,9 +946,18 @@ Examples:
         config.tts_device = "cpu"
     if args.max_tokens:
         config.max_tokens = args.max_tokens
+    if args.input_device is not None:
+        config.input_device = args.input_device
+    if args.output_device is not None:
+        config.output_device = args.output_device
 
     # Create IRIS instance
     iris = IrisLocal(config)
+
+    # Force ffmpeg mode if requested
+    if args.ffmpeg:
+        iris.audio._use_ffmpeg = True
+        logger.info("[Audio] Forced ffmpeg mode enabled")
 
     if args.list_devices:
         iris.audio.list_devices()
