@@ -434,10 +434,10 @@ MEMORY_TOOLS = [
 ---
 
 ### ARCH-011: Self-Hosted Web Search Infrastructure
-**Severity**: 🔮 Future | **Created**: 2025-12-06
+**Severity**: 🟠 High | **Created**: 2025-12-06 | **Priority**: Next Week (Dec 9-13)
 **Component**: voice-backend, distribution
 
-**Context**: IRIS needs web search capability. Current approach uses Brave Search API (requires API key). Future goal: self-hosted option for full offline/privacy control.
+**Context**: IRIS needs web search capability. Current approach uses Brave Search API (requires API key). **Brave free tier is 2000 req/month - at current usage, will exhaust within ~1 week.** Need self-hosted alternative ready ASAP.
 
 **Current Implementation** (MVP):
 - Brave Search API with user-provided API key
@@ -481,15 +481,21 @@ Option C: Hybrid
 
 **Implementation Order**:
 1. ✅ MVP: Brave Search API with manual key setup
-2. 🔮 Future: SearXNG self-hosted option
-3. 🔮 Future: Arc Forge hosted service (if user demand)
+2. ✅ Rate limiting (1 req/sec) + quota tracking with alerts
+3. 🔜 **NEXT WEEK**: SearXNG self-hosted option (Docker-based)
+4. 🔮 Future: Arc Forge hosted service (if user demand)
+
+**Next Week Plan** (Dec 9-13):
+- [ ] Research SearXNG Docker deployment
+- [ ] Add SearXNG as alternative search backend
+- [ ] Abstract web search to support multiple providers
+- [ ] Document SearXNG setup in DEVELOPMENT.md
 
 **Prerequisites**:
-- Brave Search tool working (MVP)
-- User feedback on search importance
-- Cost analysis for hosted service
+- ✅ Brave Search tool working (MVP)
+- ✅ Quota tracking implemented
 
-**Status**: 🔮 Future (document for roadmap, implement Brave for now)
+**Status**: 🟠 High priority - SearXNG implementation next week
 
 ---
 
