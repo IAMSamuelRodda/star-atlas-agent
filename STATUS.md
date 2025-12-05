@@ -3,9 +3,10 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-05 (Desktop launcher, interruption architecture)
+**Last Updated**: 2025-12-05 (PROGRESS.md realignment, tool integration research)
 **Current Phase**: Implementation (Native client development)
 **Version**: 0.1.0 (Pre-MVP)
+**Focus**: Native Primary, Web Secondary
 
 ---
 
@@ -242,6 +243,20 @@ None
 ---
 
 ## Recent Achievements (Last 2 Weeks)
+
+**PROGRESS.md Realignment & Tool Research (2025-12-05)**
+- **Focus pivot**: Native Primary, Web Secondary
+  - Epic 0 (Native Client) now primary development track
+  - Epics 1, 3, 5-8 marked as SECONDARY (Web)
+  - Epics 2, 4 marked as SHARED (used by both)
+- **Tool integration research**: `specs/RESEARCH-tool-integration-architecture.md`
+  - Ollama native tools: 0ms overhead, ~50-80 tokens/tool
+  - MCP tools via lazy-mcp: ~800 tokens total (95% reduction from 15k)
+  - Hybrid approach: local tools bundled in .deb, remote via MCP
+  - lazy-mcp-preload eliminates cold-start latency
+- **Implementation strategy**:
+  - Phase 1: Native Ollama tools (time, calculator, timer)
+  - Phase 2: MCP for CITADEL when API ready
 
 **GUI Improvements & Bug Fixes (2025-12-05)**
 - **Audio overlap race condition**: Fixed with threading mutex lock

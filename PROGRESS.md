@@ -2,10 +2,11 @@
 
 > **Purpose**: Task tracking for IRIS MVP development
 > **Tracking Method**: Document-based (no GitHub Projects)
+> **Focus**: **Native Primary, Web Secondary**
 > **Generated from**: specs/BLUEPRINT-project-staratlas-20251201.yaml
 
-**Last Updated**: 2025-12-03
-**Milestone**: v0.1.0 MVP Release (8-10 weeks estimated)
+**Last Updated**: 2025-12-05
+**Milestone**: v0.1.0 Native Client MVP
 
 ---
 
@@ -18,10 +19,86 @@
 | 🟢 | Complete |
 | ⚠️ | Blocked |
 | 🔍 | Needs Spike |
+| 📌 | PRIMARY (Native) |
+| 📎 | SECONDARY (Web) |
 
 ---
 
-## Epic 1: MCP Server - Star Atlas & Solana Integration
+## 📌 Epic 0: Native Client - DearPyGui Voice Interface (PRIMARY)
+
+**Status**: 🟢 Core Complete, 🟡 Tools In Progress
+**Priority**: PRIMARY - This is the main development track
+
+> **Implementation**: Python DearPyGui desktop application with local Ollama LLM
+> **Location**: `packages/voice-backend/iris_gui.py`, `iris_local.py`
+
+### Feature 0.1: DearPyGui Application Shell (2 days) 🟢
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_0_1_1 | Initialize DearPyGui window with dark theme | 1.5 | 0.5d | 🟢 |
+| task_0_1_2 | Create modular panel layout (voice, settings, logs) | 2.0 | 1d | 🟢 |
+| task_0_1_3 | Implement viewport controls and status indicators | 1.8 | 0.5d | 🟢 |
+
+### Feature 0.2: Local Ollama Integration (2 days) 🟢
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_0_2_1 | Implement Ollama HTTP client wrapper | 2.2 | 1d | 🟢 |
+| task_0_2_2 | Add model selection and configuration | 1.8 | 0.5d | 🟢 |
+| task_0_2_3 | Implement layered system prompts (base + model-specific) | 2.0 | 0.5d | 🟢 |
+
+> **Implemented**: Model family detection, generation config per model, streaming responses
+
+### Feature 0.3: Local Voice Pipeline (3 days) 🟢
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_0_3_1 | Integrate faster-whisper STT (local GPU) | 2.5 | 1d | 🟢 |
+| task_0_3_2 | Integrate Kokoro TTS (local GPU) | 2.3 | 1d | 🟢 |
+| task_0_3_3 | Implement audio device management (sounddevice) | 2.0 | 0.5d | 🟢 |
+| task_0_3_4 | Add ffmpeg fallback for audio capture | 2.2 | 0.5d | 🟢 |
+
+> **Latency achieved**: STT ~180ms, TTS ~50ms (GPU), total round-trip ~700ms
+
+### Feature 0.4: VAD & Barge-In Interruption (2 days) 🟢
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_0_4_1 | Integrate Silero VAD for voice activity detection | 2.5 | 1d | 🟢 |
+| task_0_4_2 | Implement barge-in interruption with playhead tracking | 3.0 | 0.5d | 🟢 |
+| task_0_4_3 | Add interruption context to conversation history | 2.2 | 0.5d | 🟢 |
+
+> **Implemented**: `InterruptionEvent` dataclass tracks intended/spoken/user-interruption
+
+### Feature 0.5: Conversation Memory (1 day) 🟢
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_0_5_1 | Implement conversation history with context window | 2.0 | 0.5d | 🟢 |
+| task_0_5_2 | Add context-aware retrieval for summaries | 2.3 | 0.5d | 🟢 |
+
+> **Implemented**: Rolling conversation history, automatic summarization trigger
+
+### Feature 0.6: GUI Enhancements (1 day) 🟢
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_0_6_1 | Add pipeline status indicators (STT/LLM/TTS) | 1.8 | 0.5d | 🟢 |
+| task_0_6_2 | Add interruption context display panel | 1.5 | 0.25d | 🟢 |
+| task_0_6_3 | Fix audio overlap race condition with mutex | 2.0 | 0.25d | 🟢 |
+
+### Feature 0.7: Local Tool Integration (3-5 days) 🟡
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_0_7_1 | Implement Ollama tool calling wrapper | 2.5 | 1d | 🟡 |
+| task_0_7_2 | Add tool registration and execution framework | 2.0 | 0.5d | 🔴 |
+| task_0_7_3 | Integrate tool results into conversation flow | 2.2 | 0.5d | 🔴 |
+| task_0_7_4 | Time/date tool (current time, timezone support) | 1.5 | 0.5d | 🔴 |
+| task_0_7_5 | Calculator tool (basic math operations) | 1.5 | 0.5d | 🔴 |
+| task_0_7_6 | Timer/reminder tool (local notifications) | 2.0 | 1d | 🔴 |
+| task_0_7_7 | Web search tool (DuckDuckGo API) | 2.3 | 1d | 🔴 |
+
+> **Note**: Local tools work offline without external API dependencies (except web search)
+> **Ollama models with tool support**: qwen2.5, llama3.1, mistral
+
+---
+
+## 📎 Epic 1: MCP Server - Star Atlas & Solana Integration (SECONDARY)
 
 **Estimated**: 21 days | **Status**: 🟡
 
@@ -61,11 +138,12 @@
 
 ---
 
-## Epic 2: Memory Service - User Context & Preferences
+## 📌 Epic 2: Memory Service - User Context & Preferences (SHARED)
 
 **Estimated**: 13 days | **Status**: 🟢
 
 > **Pattern**: sqlite-knowledge-graph from agentic-framework
+> **Note**: Used by both Native Client and Web - foundation layer
 > **Reference**: https://github.com/IAMSamuelRodda/agentic-framework/blob/main/patterns/sqlite-knowledge-graph.md
 
 ### Feature 2.1: SQLite Database Setup (3 days) 🟢
@@ -100,11 +178,12 @@
 
 ---
 
-## Epic 3: Agent Core - Claude Agent SDK Orchestration
+## 📎 Epic 3: Agent Core - Claude Agent SDK Orchestration (SECONDARY)
 
 **Estimated**: 15 days | **Status**: 🟢
 
 > **Foundation**: Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`)
+> **Note**: Web backend - Native Client uses local Ollama instead
 > **Key Decision**: Agent-first architecture using battle-tested exploration/thinking patterns
 
 ### Feature 3.1: Agent SDK Integration (5 days) 🟢
@@ -143,11 +222,12 @@
 
 ---
 
-## Epic 4: Voice Service - STT/TTS Integration
+## 📌 Epic 4: Voice Service - STT/TTS Integration (SHARED)
 
 **Estimated**: 18 days | **Status**: 🟢
 
 > **Implementation**: Python FastAPI backend with faster-whisper (STT) + Kokoro-82M (TTS)
+> **Note**: Voice models used by both Native Client and Web backend
 > **Architecture**: Browser → WebSocket (binary) → Python backend (no Node.js bridge)
 > **Location**: `packages/voice-backend/`
 > **TTS Update (2025-12-03)**: Switched from Chatterbox to Kokoro-82M for 12x faster synthesis (42ms vs 500ms)
@@ -187,11 +267,12 @@
 
 ---
 
-## Epic 5: Web Application - React Frontend
+## 📎 Epic 5: Web Application - React Frontend (SECONDARY)
 
 **Estimated**: 20 days | **Status**: 🟡 (Core complete, Auth & Dashboard pending)
 
 > **Implementation**: React 18 + TypeScript + Vite
+> **Note**: Web interface - Native Client is primary for MVP
 > **Location**: `packages/web-app/`
 
 ### Feature 5.1: React + Vite Setup (2 days) 🟢
@@ -238,11 +319,12 @@
 
 ---
 
-## Epic 6: Deployment & Infrastructure
+## 📎 Epic 6: Deployment & Infrastructure (SECONDARY)
 
 **Estimated**: 14 days | **Status**: 🟡 (Docker complete, VPS pending)
 
 > **Current state**: Local Docker development working, VPS deployment not started
+> **Note**: Web deployment - Native Client runs locally, no infrastructure needed
 
 ### Feature 6.1: Docker Compose Configuration (4 days) 🟢
 | ID | Task | Complexity | Est. | Status |
@@ -279,9 +361,11 @@
 
 ---
 
-## Epic 7: Testing & Quality Assurance
+## 📎 Epic 7: Testing & Quality Assurance (SECONDARY)
 
 **Estimated**: 15 days | **Status**: 🔴
+
+> **Note**: Web/E2E testing - Native Client tested manually during development
 
 ### Feature 7.1: Unit Tests (5 days)
 | ID | Task | Complexity | Est. | Status |
@@ -306,35 +390,7 @@
 
 ---
 
-## Epic 7b: Native Client Local Tools (NEW)
-
-**Estimated**: 3-5 days | **Status**: 🟡
-**Added**: 2025-12-05
-
-> **Context**: Enable IRIS to use tools in native client without waiting for CITADEL API
-> **Implementation**: Ollama function calling for compatible models (qwen2.5, llama3.1, mistral)
-
-### Feature 7b.1: Local Tool Framework (1-2 days) 🟡
-| ID | Task | Complexity | Est. | Status |
-|----|------|------------|------|--------|
-| task_7b_1_1 | Implement Ollama tool calling wrapper | 2.5 | 1d | 🟡 |
-| task_7b_1_2 | Add tool registration and execution framework | 2.0 | 0.5d | 🔴 |
-| task_7b_1_3 | Integrate tool results into conversation flow | 2.2 | 0.5d | 🔴 |
-
-### Feature 7b.2: Basic Local Tools (2-3 days) 🔴
-| ID | Task | Complexity | Est. | Status |
-|----|------|------------|------|--------|
-| task_7b_2_1 | Time/date tool (current time, timezone support) | 1.5 | 0.5d | 🔴 |
-| task_7b_2_2 | Calculator tool (basic math operations) | 1.5 | 0.5d | 🔴 |
-| task_7b_2_3 | Timer/reminder tool (local notifications) | 2.0 | 1d | 🔴 |
-| task_7b_2_4 | Web search tool (DuckDuckGo API) | 2.3 | 1d | 🔴 |
-
-> **Note**: These tools work offline/locally without external API dependencies (except web search)
-> **Goal**: Give IRIS useful capabilities while CITADEL API develops
-
----
-
-## Epic 8: CITADEL Integration - Voice Access to Fleet Data
+## 📎 Epic 8: CITADEL Integration - Voice Access to Fleet Data (SECONDARY)
 
 **Estimated**: 37-40 days (2-3 weeks parallel) | **Status**: 🔴
 **Dependency**: CITADEL MVP APIs (read-only, no automation triggers)
@@ -420,22 +476,30 @@
 
 ## Summary
 
-| Epic | Features | Tasks | Est. Days | Status | Notes |
-|------|----------|-------|-----------|--------|-------|
-| MCP Server | 4 | 11 | 17 | 🟡 | 2 tasks deferred |
-| Memory Service | 4 | 10 | 13 | 🟢 | Complete |
-| Agent Core | 4 | 9 | 15 | 🟢 | Complete |
-| Voice Service | 4 | 10 | 18 | 🟢 | Complete (latency optimized) |
-| Web Application | 5 | 13 | 20 | 🟡 | Core done, Auth/Dashboard pending |
-| Deployment | 4 | 10 | 14 | 🟡 | Docker done, VPS pending |
-| Testing | 3 | 9 | 15 | 🔴 | Latency benchmarks only |
-| **Native Client Tools** | **2** | **7** | **3-5** | 🟡 | NEW - Local tools for native client |
-| **CITADEL Integration** | **11** | **35** | **37-40** | 🔴 | Post-MVP |
+### 📌 PRIMARY (Native Client MVP)
+
+| Epic | Features | Tasks | Status | Notes |
+|------|----------|-------|--------|-------|
+| **0. Native Client** | **7** | **21** | 🟢/🟡 | Core complete, tools in progress |
+| 2. Memory Service | 4 | 10 | 🟢 | SHARED - Complete |
+| 4. Voice Service | 4 | 10 | 🟢 | SHARED - Complete |
+
+### 📎 SECONDARY (Web - Post Native MVP)
+
+| Epic | Features | Tasks | Status | Notes |
+|------|----------|-------|--------|-------|
+| 1. MCP Server | 4 | 11 | 🟡 | 2 tasks deferred |
+| 3. Agent Core | 4 | 9 | 🟢 | Web backend - Complete |
+| 5. Web Application | 5 | 13 | 🟡 | Core done, Auth pending |
+| 6. Deployment | 4 | 10 | 🟡 | Docker done, VPS pending |
+| 7. Testing | 3 | 9 | 🔴 | Web E2E tests |
+| 8. CITADEL | 11 | 35 | 🔴 | Blocked on API |
 
 > **Last Updated**: 2025-12-05
-> **MVP Scope Cuts**: prepareTransaction, WebSocket subscriptions deferred. CITADEL is post-MVP.
-> **Voice latency**: Achieved ~700ms to first audio (target was <500ms)
-> **New**: Local tools integration in progress (time/date, calculator, web search)
+> **Focus**: Native Primary, Web Secondary
+> **Native MVP**: DearPyGui desktop app with local Ollama + faster-whisper + Kokoro
+> **Voice latency**: ~700ms round-trip (target <500ms)
+> **Current Work**: Local tool integration (Feature 0.7)
 
 ---
 
