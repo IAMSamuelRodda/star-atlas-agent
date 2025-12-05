@@ -58,6 +58,7 @@ from .tts_kokoro import (
     AVAILABLE_VOICES,
 )
 from .websocket import get_voice_handler
+from .warmup import WarmupManager, WarmupStatus, get_warmup_manager
 
 # Configure logging
 logging.basicConfig(
@@ -72,38 +73,30 @@ STT_MODEL_SIZE: ModelSize = os.getenv("STT_MODEL_SIZE", "base")  # type: ignore
 # Set STT_DEVICE=cuda for ~32% faster transcription (181ms vs 266ms)
 STT_DEVICE: Literal["cpu", "cuda", "auto"] = os.getenv("STT_DEVICE", "cuda")  # type: ignore
 TTS_DEVICE: Literal["cpu", "cuda", "auto"] = os.getenv("TTS_DEVICE", "cuda")  # type: ignore
-PRELOAD_MODELS = os.getenv("PRELOAD_MODELS", "false").lower() == "true"
-
-
-async def warmup_tts():
-    """Warm up TTS by synthesizing a short phrase."""
-    import asyncio
-    loop = asyncio.get_event_loop()
-    tts = get_kokoro_tts(TTS_DEVICE)
-    # Run synthesis in thread pool to not block
-    await loop.run_in_executor(
-        None,
-        lambda: tts.synthesize("Ready.")
-    )
-    logger.info("Kokoro TTS warmup complete")
+OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan - preload models and warmup."""
+    """Application lifespan - comprehensive warmup of all components."""
     logger.info(f"Voice backend starting: STT={STT_DEVICE}, TTS={TTS_DEVICE}")
     logger.info(f"Default voice: {DEFAULT_VOICE}")
+    logger.info(f"LLM: {OLLAMA_MODEL} at {OLLAMA_URL}")
 
-    # Always preload STT model (it's fast)
-    logger.info("Loading STT model...")
-    _ = get_stt(STT_MODEL_SIZE, STT_DEVICE).model
-    logger.info("STT model loaded")
+    # Comprehensive warmup of all components
+    warmup = get_warmup_manager(
+        stt_device=STT_DEVICE,
+        tts_device=TTS_DEVICE,
+        stt_model_size=STT_MODEL_SIZE,
+        ollama_model=OLLAMA_MODEL,
+    )
+    await warmup.warmup_all()
 
-    # Always preload and warmup Kokoro TTS (important for first-request latency)
-    logger.info("Loading Kokoro TTS model and warming up...")
-    _ = get_kokoro_tts(TTS_DEVICE).pipeline
-    await warmup_tts()
-    logger.info(f"Kokoro TTS ready with voice: {DEFAULT_VOICE}")
+    if not warmup.is_ready:
+        logger.warning("WARNING: Not all components warmed up successfully!")
+    else:
+        logger.info("All components ready for user interaction")
 
     yield
     logger.info("Shutting down voice backend")
@@ -158,6 +151,20 @@ class HealthResponse(BaseModel):
     device: str
 
 
+class WarmupStatusResponse(BaseModel):
+    """Warmup status response."""
+
+    ready: bool
+    stt_ready: bool
+    stt_latency_ms: float
+    tts_ready: bool
+    tts_latency_ms: float
+    llm_ready: bool
+    llm_latency_ms: float
+    llm_model: str
+    total_time_ms: float
+
+
 class VoicesResponse(BaseModel):
     """List of available voices."""
 
@@ -203,6 +210,35 @@ async def health_check():
         stt_loaded=stt._model is not None,
         tts_loaded=tts._pipeline is not None,
         device=f"stt={STT_DEVICE}, tts={TTS_DEVICE} (kokoro)",
+    )
+
+
+@app.get("/warmup", response_model=WarmupStatusResponse)
+async def warmup_status():
+    """
+    Get warmup status of all components.
+
+    Returns readiness state and warmup latencies for:
+    - STT (faster-whisper)
+    - TTS (Kokoro)
+    - LLM (Ollama, optional)
+
+    Use this endpoint to verify the system is ready before
+    allowing user interaction.
+    """
+    warmup = get_warmup_manager()
+    status = warmup.status
+
+    return WarmupStatusResponse(
+        ready=status.is_ready,
+        stt_ready=status.stt_ready,
+        stt_latency_ms=status.stt_latency_ms,
+        tts_ready=status.tts_ready,
+        tts_latency_ms=status.tts_latency_ms,
+        llm_ready=status.llm_ready,
+        llm_latency_ms=status.llm_latency_ms,
+        llm_model=status.llm_model,
+        total_time_ms=status.total_time_ms,
     )
 
 
