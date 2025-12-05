@@ -26,6 +26,12 @@ dev = [
 gpu = [
     "torch>=2.4.0",
 ]
+local = [
+    "sounddevice>=0.5.0",  # Direct audio I/O for iris-local
+]
+gui = [
+    "dearpygui>=2.0.0",    # Native GUI for iris-local
+]
 
 [build-system]
 requires = ["hatchling"]

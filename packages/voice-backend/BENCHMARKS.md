@@ -52,6 +52,32 @@ cat benchmarks/results/streaming.jsonl | jq -s 'group_by(.parameters.model) | .[
 
 ## Benchmark Results
 
+### Native Client (iris-local) - 2025-12-05
+
+Test configuration:
+- Script: `iris_local.py` (benchmark mode)
+- Hardware: RTX 4090 (CUDA)
+- Components: sounddevice → Silero VAD → faster-whisper → Ollama → Kokoro → sounddevice
+
+#### First Audio Latency (warm, 3 queries)
+
+| Query | LLM First Token | TTS First Chunk | First Audio |
+|-------|-----------------|-----------------|-------------|
+| "What is your name?" | 78ms | 40ms | **118ms** |
+| "Give me a quick status update." | 78ms | 45ms | **123ms** |
+| "Hello, how are you?" | 73ms | 23ms | **96ms** |
+
+#### Comparison: iris-local vs Web Stack
+
+| Architecture | First Audio | Overhead |
+|--------------|-------------|----------|
+| Web stack (WebSocket + base64) | 300-500ms | ~200ms network + encoding |
+| **iris-local (direct audio)** | **96-123ms** | **None** |
+
+**Improvement**: ~200-300ms latency reduction by eliminating web infrastructure.
+
+---
+
 ### Streaming Stress Test (2025-12-05)
 
 Test configuration:
@@ -150,11 +176,12 @@ Before implementing streaming LLM + chunked TTS:
 
 | Metric | Target | Current Status |
 |--------|--------|----------------|
-| Voice round-trip | <500ms | ~300-480ms (first audio) |
+| Voice round-trip | <500ms | ~300-480ms (web), **96-123ms (native)** |
 | STT latency | <50ms | 22-28ms |
 | TTS latency | <50ms | 40-95ms per chunk |
 | Text preprocessing | <1ms | 0.01-0.02ms |
-| First audio (streaming) | <500ms | 138-480ms |
+| First audio (streaming) | <500ms | 138-480ms (web), **96-123ms (native)** |
+| First audio (native) | <150ms | **96-123ms** |
 
 ---
 
@@ -162,6 +189,7 @@ Before implementing streaming LLM + chunked TTS:
 
 | Script | Purpose |
 |--------|---------|
+| `iris_local.py` | Native Python client (PTT/VAD modes) |
 | `test_warmup.py` | Component warmup validation |
 | `test_voice_flow.py` | Basic STT→LLM→TTS flow |
 | `test_streaming_stress.py` | Extended streaming with metrics |

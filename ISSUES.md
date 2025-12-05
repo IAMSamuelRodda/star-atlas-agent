@@ -522,6 +522,82 @@ IRIS Provides:
 
 ---
 
+## Aspirational Features (Native Client)
+
+### ASP-003: Native Compiled Client (Rust/C++)
+**Type**: Architecture | **Priority**: Future
+**Origin**: Riff session 2025-12-05
+
+**Vision**: Single compiled binary for maximum performance and game engine integration.
+
+**Why Compiled Native**:
+- **Unreal Engine integration**: Star Atlas uses Unreal (C++), native client could be an in-game overlay
+- **Minimal latency**: No Python interpreter, no web stack overhead
+- **Single binary distribution**: Easy install for users with compatible hardware
+- **Game modding**: Plugin architecture for various games
+
+**Target Architecture**:
+```
+Single Rust/C++ Binary:
+├── Audio I/O (cpal/portaudio)
+├── VAD (Silero ONNX or custom)
+├── STT (whisper.cpp)
+├── LLM (llama.cpp or Ollama client)
+├── TTS (??? - need Rust TTS solution)
+└── GUI (egui/imgui)
+```
+
+**Key Challenges**:
+1. **TTS**: Kokoro is Python-only. Options:
+   - whisper.cpp style port of Kokoro
+   - Piper TTS (C++ native, ONNX models)
+   - espeak-ng (lower quality but native)
+   - Keep TTS as separate Python service (hybrid)
+
+2. **Model Loading**: GPU memory management for multiple models
+
+3. **Build Complexity**: CUDA/ROCm support across platforms
+
+**Phased Approach**:
+```
+Phase 1 (Current): Python native GUI - validate architecture
+Phase 2: Rust audio + VAD wrapper around Python backend
+Phase 3: Replace STT with whisper.cpp
+Phase 4: Replace LLM with llama.cpp (or keep Ollama)
+Phase 5: Replace TTS (biggest unknown)
+Phase 6: Full native binary
+```
+
+**Unreal Engine Integration Path**:
+- Phase 1-2: External process, IPC via localhost socket
+- Phase 3+: Could become Unreal plugin (C++ compatible)
+- Audio routing: Capture game audio context, output to game audio system
+
+**Alternative: Hybrid Architecture**:
+```
+Rust Frontend (audio + GUI):
+├── Audio capture/playback (native)
+├── VAD (native ONNX)
+├── GUI (egui)
+└── IPC to Python backend
+
+Python Backend (unchanged):
+├── STT (faster-whisper)
+├── LLM (Ollama)
+└── TTS (Kokoro)
+```
+
+This hybrid gets 80% of the benefit with 20% of the effort.
+
+**Prerequisites**:
+- Python native GUI working and validated
+- Performance benchmarks establishing baseline
+- TTS solution research spike
+
+**Status**: 🔮 Aspirational (post Python GUI validation)
+
+---
+
 ## Aspirational Features (from CITADEL)
 
 > **Note**: These ML/RL features were originally scoped for CITADEL but moved to IRIS since IRIS is the "intelligent assistant" layer. CITADEL provides reliable data; IRIS provides intelligence.
