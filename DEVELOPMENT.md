@@ -99,7 +99,7 @@ ssh vps 'cd /opt/iris && git pull && docker-compose up -d --build'
 services:
   mcp-server:     # MCP tools for Solana/Star Atlas
   agent-core:     # Claude Agent SDK
-  voice-service:  # Chatterbox STT/TTS
+  voice-backend:  # Python (FastAPI + faster-whisper + Kokoro)
   web-app:        # React frontend (static)
 ```
 
@@ -205,9 +205,12 @@ ANTHROPIC_API_KEY=sk-ant-...
 DATABASE_PATH=/data/iris.db  # SQLite database
 ```
 
-**voice-service:**
+**voice-backend (Python):**
 ```env
-CHATTERBOX_URL=http://localhost:8080  # Self-hosted Chatterbox
+STT_DEVICE=cuda          # or cpu
+TTS_DEVICE=cuda          # or cpu
+STT_MODEL_SIZE=base      # tiny, base, small, medium, large-v3
+KOKORO_VOICE=af_heart    # default voice
 ```
 
 **web-app:**
@@ -263,6 +266,35 @@ pnpm dev
 cd packages/web-app
 pnpm install
 pnpm dev
+
+# Voice Backend (Python)
+cd packages/voice-backend
+python -m venv .venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+python -m uvicorn src.main:app --reload --port 8001
+```
+
+### Voice Backend Testing
+
+```bash
+cd packages/voice-backend
+source .venv/bin/activate
+
+# Run text preprocessing tests (26 test cases)
+python src/text_processing.py
+
+# Run preprocessing performance benchmark
+python test_preprocessing_perf.py
+
+# Run with audio playback
+python test_preprocessing_perf.py --play
+
+# Run voice flow test (STT → LLM → TTS)
+python test_voice_flow.py --models qwen2.5:7b
+
+# GPU configuration (default)
+STT_DEVICE=cuda TTS_DEVICE=cuda python -m uvicorn src.main:app --port 8001
 ```
 
 ---
@@ -305,11 +337,20 @@ docker-compose build --no-cache
 lsof -i :3000  # or other ports
 ```
 
-### Voice Service connection fails
+### Voice Backend connection fails
 
-1. Verify Chatterbox is running: `curl http://localhost:8080/health`
+1. Verify voice-backend is running: `curl http://localhost:8001/health`
 2. Check WebSocket connectivity in browser console
 3. Ensure CORS is configured for your frontend URL
+4. For GPU issues, check CUDA is available: `python -c "import torch; print(torch.cuda.is_available())"`
+
+### TTS says "Chinese letter" repeatedly
+
+This happens when LLM outputs CJK characters. The text preprocessing module
+converts them, but if you hear this:
+1. Check LLM output for Chinese characters
+2. Verify `preprocess_for_tts()` is being called in `tts_kokoro.py`
+3. Run: `python src/text_processing.py` to verify 26 tests pass
 
 ---
 
@@ -321,4 +362,4 @@ lsof -i :3000  # or other ports
 
 ---
 
-**Last Updated**: 2025-12-03
+**Last Updated**: 2025-12-05

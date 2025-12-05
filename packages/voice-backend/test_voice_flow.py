@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 """
-Voice Flow Test - Automated test with audio playback.
+Voice Flow Test - Automated test with audio slate announcements.
 
-Tests the full pipeline: Ollama LLM -> TTS -> Play audio
+Tests the full pipeline: STT (simulated) -> Ollama LLM -> TTS -> Play audio
 Uses Ollama directly for fast local inference (not Claude Cloud).
+
+IMPORTANT: Uses num_predict option for consistent fast latency.
+Without num_predict, Ollama has ~3s overhead even for short responses.
+With num_predict=100, latency drops to ~100-150ms.
+
+Film-style slate announcements identify each test clearly.
 
 Usage:
     python test_voice_flow.py
     python test_voice_flow.py --models qwen2.5:7b,mistral:7b
+    python test_voice_flow.py --no-slate  # Skip audio announcements
 """
 
 import os
@@ -41,6 +48,10 @@ SYSTEM_PROMPT = """You are IRIS, the AI assistant for Star Atlas players.
 Keep responses SHORT (1-2 sentences max) - they will be spoken aloud.
 Be helpful, friendly, and concise. No markdown or special formatting."""
 
+# Token limit for fast inference (CRITICAL for latency)
+# Without this, Ollama has ~3s overhead even for short responses
+NUM_PREDICT = 100
+
 
 def play_audio(audio_data, sample_rate=24000):
     """Play audio using aplay."""
@@ -51,7 +62,11 @@ def play_audio(audio_data, sample_rate=24000):
 
 
 def call_ollama(model: str, prompt: str) -> tuple[str, float]:
-    """Call Ollama directly for fast local inference."""
+    """Call Ollama directly for fast local inference.
+
+    Uses num_predict option for consistent low latency.
+    Without it, Ollama has ~3s overhead even for tiny responses.
+    """
     start = time.perf_counter()
 
     response = requests.post(
@@ -61,6 +76,9 @@ def call_ollama(model: str, prompt: str) -> tuple[str, float]:
             "prompt": prompt,
             "system": SYSTEM_PROMPT,
             "stream": False,
+            "options": {
+                "num_predict": NUM_PREDICT,  # CRITICAL: limits tokens for fast response
+            },
         },
         timeout=30,
     )
@@ -74,14 +92,42 @@ def call_ollama(model: str, prompt: str) -> tuple[str, float]:
     return result.get("response", "").strip(), elapsed
 
 
-def test_voice_flow(tts, query: str, model: str):
-    """Test full voice flow: Ollama LLM -> TTS -> Play."""
+def announce_slate(tts, model: str, take: int):
+    """Announce the test like a film slate/clapperboard.
+
+    Example: "Model: Qwen 2.5, Take 1"
+    This helps identify which model is being tested when listening to recordings.
+    """
+    # Clean up model name for speech (remove version suffixes)
+    model_name = model.replace(":", " ").replace(".", " point ").replace("-", " ")
+
+    slate_text = f"Model: {model_name}, Take {take}"
+    print(f"🎬 SLATE: \"{slate_text}\"")
+
+    start = time.perf_counter()
+    tts_result = tts.synthesize(slate_text)
+    slate_time = (time.perf_counter() - start) * 1000
+    print(f"   (TTS: {slate_time:.0f}ms)")
+
+    audio_int16 = (tts_result.audio.squeeze() * 32767).astype(np.int16)
+    play_audio(audio_int16, tts_result.sample_rate)
+
+    time.sleep(0.3)  # Brief pause after slate
+
+
+def test_voice_flow(tts, query: str, model: str, take: int = 1, use_slate: bool = True):
+    """Test full voice flow: Slate -> Ollama LLM -> TTS -> Play."""
 
     # Big banner showing current model
     print(f"\n{'#'*60}")
     print(f"#  MODEL: {model:^46} #")
     print(f"#  Query: {query[:44]:<46} #")
+    print(f"#  Take:  {take:<46} #")
     print(f"{'#'*60}")
+
+    # Film-style slate announcement (audio)
+    if use_slate:
+        announce_slate(tts, model, take)
 
     # Step 1: Call Ollama directly
     print(f"\n[1] LLM: Generating with {model}...")
@@ -118,9 +164,12 @@ def main():
                        help="Comma-separated list of models to test")
     parser.add_argument("--queries", default=None,
                        help="Comma-separated list of queries")
+    parser.add_argument("--no-slate", action="store_true",
+                       help="Skip audio slate announcements")
     args = parser.parse_args()
 
     models = [m.strip() for m in args.models.split(",")]
+    use_slate = not args.no_slate
 
     if args.queries:
         queries = [q.strip() for q in args.queries.split(",")]
@@ -136,6 +185,8 @@ def main():
     print("=" * 60)
     print(f"Models: {', '.join(models)}")
     print(f"Queries: {len(queries)}")
+    print(f"Slates: {'ON (film-style audio announcements)' if use_slate else 'OFF'}")
+    print(f"Token limit: {NUM_PREDICT} (for fast inference)")
 
     # Pre-load TTS
     print("\nLoading TTS model...")
@@ -149,12 +200,20 @@ def main():
     print("Ollama warm!\n")
 
     results = {}
+    take_counter = {}  # Track takes per model
+
     for model in models:
         results[model] = []
+        take_counter[model] = 0
 
         for query in queries:
+            take_counter[model] += 1
             try:
-                llm_t, tts_t = test_voice_flow(tts, query, model)
+                llm_t, tts_t = test_voice_flow(
+                    tts, query, model,
+                    take=take_counter[model],
+                    use_slate=use_slate
+                )
                 if llm_t:
                     results[model].append((llm_t, tts_t))
                 time.sleep(0.5)  # Pause between tests
@@ -165,6 +224,8 @@ def main():
     print("\n\n" + "=" * 60)
     print("SUMMARY")
     print("=" * 60)
+    print(f"Token limit: num_predict={NUM_PREDICT}")
+    print()
     for model, times in results.items():
         if times:
             avg_llm = np.mean([t[0] for t in times])

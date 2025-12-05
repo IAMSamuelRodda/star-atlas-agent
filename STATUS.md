@@ -3,8 +3,8 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-05 (STT latency optimization complete)
-**Current Phase**: Implementation (Narrator integration)
+**Last Updated**: 2025-12-05 (TTS text preprocessing, streaming LLM testing)
+**Current Phase**: Implementation (Voice pipeline refinement)
 **Version**: 0.1.0 (Pre-MVP)
 
 ---
@@ -237,6 +237,26 @@ None
 
 ## Recent Achievements (Last 2 Weeks)
 
+**TTS Text Preprocessing (2025-12-05)**
+- **New module**: `packages/voice-backend/src/text_processing.py`
+- **Roman numerals → English words**: "Calico I" → "Calico one", "LVIII" → "fifty eight"
+- **Smart pronoun detection**: Preserves "I" in "I am", "Can I help", "Hungry I am" (Yoda-speak)
+- **Rules-based approach**:
+  - Proper noun + I = Roman numeral ("Calico I" → "Calico one")
+  - Common word + I = pronoun ("Can I" → preserved)
+  - Action verb after I = pronoun ("Emily I know" → preserved)
+- **Performance**: 0.01-0.02ms overhead (O(1) hash lookups, no NLP)
+- **26 test cases** covering edge cases: Yoda-speak, inverted sentences, proper nouns
+- **Bug discovered**: Kokoro TTS says "Chinese letter" for each CJK character
+  - Root cause: LLM (Qwen) occasionally outputs Chinese characters
+  - Fix: Preprocessing strips/handles non-ASCII before TTS
+
+**Streaming LLM Testing (2025-12-05)**
+- **Voice flow test harness**: `packages/voice-backend/test_voice_flow.py`
+- **Performance benchmark**: `packages/voice-backend/test_preprocessing_perf.py`
+- **GPU TTS with preprocessing**: 40-42ms total (preprocessing adds 0.01ms)
+- **Full pipeline verified**: STT → LLM → preprocessing → TTS
+
 **STT Latency Optimization (2025-12-05)**
 - **Investigated ARCH-004**: 181ms STT latency was actually first-run cold start, not production latency
 - **Actual warm latency**: 22-28ms for 2s voice commands (well under 50ms target)
@@ -245,12 +265,22 @@ None
 - **RealtimeSTT prototype**: `src/stt_streaming.py` available for future streaming needs
 - **Conclusion**: Batch mode with optimized beam_size is sufficient; streaming architecture not required
 
+**Ollama num_predict Discovery (2025-12-05)**
+- **Root cause found**: Ollama has ~3s overhead when `num_predict` is not specified
+- **Fix**: Add `options: { num_predict: 100 }` to all Ollama calls
+- **Before fix**: 3487ms for 7 tokens (!!!)
+- **After fix**: 106-118ms for same response
+- **Impact**: 30x latency improvement for voice responses
+- **Applied to**: `test_voice_flow.py`, narrator module already had it
+
 **Voice Flow Test (2025-12-05)**
 - **Test harness**: `packages/voice-backend/test_voice_flow.py` - automated test with audio playback
+- **Film-style slates**: Audio announcements ("Model: qwen2.5 7b, Take 1") identify each test
 - **Architecture validated**: STT → Ollama LLM → Kokoro TTS (pattern matching removed)
-- **LLM latency (direct Ollama)**: qwen2.5:7b ~160ms, mistral:7b ~276ms
-- **TTS latency (warm)**: ~57ms for typical voice responses
-- **Total latency**: 200-350ms for local 7B models (meets <500ms target)
+- **LLM latency (direct Ollama with num_predict=100)**: qwen2.5:7b ~174ms, mistral:7b ~234ms
+- **TTS latency (warm)**: ~50ms for typical voice responses
+- **Total latency**: 224-289ms for local 7B models (meets <500ms target)
+- **Usage**: `python test_voice_flow.py --models qwen2.5:7b --no-slate`
 - **Note**: Agent API uses Claude Cloud (~4-5s), direct Ollama for fast local inference
 
 **Streaming Narrator Module (2025-12-04)**
