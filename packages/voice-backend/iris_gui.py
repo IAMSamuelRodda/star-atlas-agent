@@ -280,9 +280,6 @@ class IrisGUI:
             dpg.add_spacer(width=10)
             self._create_status_indicator("TTS", "tts_indicator")
 
-        # Context window usage
-        dpg.add_spacer(height=5)
-        dpg.add_text("Context: 0 tokens (0 turns)", tag="context_stats", color=self.COLOR_TEXT_DIM)
 
     def _create_status_indicator(self, label: str, tag: str):
         """Create a status indicator dot with label."""
@@ -368,6 +365,13 @@ class IrisGUI:
                 tag="output_device_combo",
                 callback=self._on_output_device_change
             )
+
+        # Third row: Context window usage
+        dpg.add_spacer(height=5)
+        with dpg.group(horizontal=True):
+            dpg.add_text("Context:", color=self.COLOR_TEXT_DIM)
+            dpg.add_spacer(width=5)
+            dpg.add_text("0 tokens (0/10 turns)", tag="context_stats", color=self.COLOR_ACCENT)
 
     def _apply_theme(self):
         """Apply the dark theme."""
@@ -687,7 +691,7 @@ class IrisGUI:
     def _update_context_stats(self):
         """Update the context window usage display."""
         stats = self.iris.get_context_stats()
-        text = f"Context: {stats['session_tokens']:,} tokens ({stats['history_turns']}/{stats['max_history_turns']} turns)"
+        text = f"{stats['session_tokens']:,} tokens ({stats['history_turns']}/{stats['max_history_turns']} turns)"
         dpg.set_value("context_stats", text)
 
     def update_waveform(self, audio_data: np.ndarray):
