@@ -541,6 +541,9 @@ class IrisLocal:
         self._interrupt_requested = False
 
         def monitor_loop():
+            # Create separate VAD instance to avoid thread conflicts with main VAD
+            monitor_vad = SileroVAD(threshold=0.7)  # Higher threshold for interruption
+
             # Use ffmpeg to capture audio for VAD
             cmd = [
                 "ffmpeg", "-f", "pulse", "-i", "default",
@@ -566,7 +569,7 @@ class IrisLocal:
                     if len(chunk) < 512:
                         continue
 
-                    is_speech, confidence = self.vad.is_speech(chunk)
+                    is_speech, confidence = monitor_vad.is_speech(chunk)
 
                     if is_speech and confidence > 0.7:  # Higher threshold for interruption
                         speech_frames += 1
