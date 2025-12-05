@@ -259,9 +259,9 @@ BRAVE_API_KEY=your_brave_api_key_here
 
 ### Tools Requiring API Keys
 
-| Tool | API Key | Free Tier |
-|------|---------|-----------|
-| `web_search` | `BRAVE_API_KEY` | Yes (2,000/month) |
+| Tool | API Key | Free Tier | Rate Limit |
+|------|---------|-----------|------------|
+| `web_search` | `BRAVE_API_KEY` | 2,000/month | 1 req/sec |
 
 ### Verifying Setup
 
