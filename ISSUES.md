@@ -329,6 +329,78 @@ if len(tool_result) > 1000:
 
 ---
 
+### ARCH-010: Native Memory Integration
+**Severity**: 🔮 Future | **Created**: 2025-12-05
+**Component**: voice-backend (Python), memory-service (TypeScript)
+
+**Context**: IRIS has a fully implemented memory service (`packages/memory-service/`) based on Anthropic's MCP Memory Server pattern, but it's TypeScript for the web backend. The native Python client doesn't use it yet.
+
+**Current State**:
+- `packages/memory-service/`: Complete TypeScript implementation
+  - Knowledge graph (entities, observations, relations)
+  - 11 MCP tools (create/delete/search/summarize)
+  - Conversation memory with TTL
+  - User edit tracking (`is_user_edit` flag)
+- Native client (`iris_local.py`): In-memory conversation only, no persistence
+
+**Integration Options**:
+
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| **Python port** | Rewrite memory-service in Python | Native, no bridge | Duplicate code |
+| **MCP server** | Run memory-service as MCP server | Reuse existing code | Extra process, latency |
+| **SQLite direct** | Python client writes to same SQLite | Shared data | Schema coupling |
+
+**Recommended Approach**: Python port with shared SQLite schema
+- Port `KnowledgeGraphManager` to Python
+- Same SQLite schema as TypeScript version
+- Native Ollama tools for memory operations
+- Shared database between native and web clients
+
+**Memory Tools for Ollama**:
+```python
+MEMORY_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "remember",
+            "description": "Store a fact about the user or their Star Atlas experience",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "entity_name": {"type": "string"},
+                    "entity_type": {"type": "string"},
+                    "observation": {"type": "string"}
+                },
+                "required": ["entity_name", "observation"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "recall",
+            "description": "Search memory for information about a topic",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"}
+                },
+                "required": ["query"]
+            }
+        }
+    }
+]
+```
+
+**Dependency**: Feature 0.7 (Local Tool Integration) must be complete first - memory tools require tool calling to work.
+
+**Pattern Reference**: `pip-by-arc-forge/ARCHITECTURE.md` (knowledge graph schema), Anthropic MCP Memory Server
+
+**Status**: 🔮 Future (after tools integration)
+
+---
+
 ## Low Priority / Future (Riff Session 2025-12-05)
 
 ### ISSUE-015: Remove Temporary System Prompt Limitations

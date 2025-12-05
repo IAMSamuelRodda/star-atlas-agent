@@ -501,6 +501,7 @@
 |------|----------|--------|-------|
 | **9. Subagent Delegation** | 5 | 🔍 Spike | After tools (ARCH-008) |
 | **10. Context Optimization** | 5 | 🔍 Spike | After delegation (ARCH-009) |
+| **11. Native Memory** | 5 | 🔍 Spike | After tools - Python port |
 
 > **Last Updated**: 2025-12-05
 > **Focus**: Native Primary, Web Secondary
@@ -564,6 +565,23 @@
 
 > **Goal**: Squeeze more context from models for natural conversations
 > **Approach**: Summarize older messages, compress tool outputs, preserve key facts
+
+### 🔮 Epic 11: Native Memory Integration (FUTURE)
+
+**Status**: 🔍 Needs Spike | **Prerequisite**: Feature 0.7 complete
+**Reference**: `packages/memory-service/` (TypeScript), `pip-by-arc-forge` (Anthropic MCP Memory pattern)
+
+| Feature | Description | Complexity |
+|---------|-------------|------------|
+| 11.1 | Python memory client (SQLite knowledge graph) | 2.5 |
+| 11.2 | Ollama memory tools (create/search entities) | 2.3 |
+| 11.3 | Conversation persistence (native client) | 2.0 |
+| 11.4 | User edit tracking ("remember that...") | 2.2 |
+| 11.5 | Memory summary generation via LLM | 2.5 |
+
+> **Current State**: memory-service is TypeScript for web backend; native client has in-memory only
+> **Pattern**: Anthropic MCP Memory Server (entities + observations + relations)
+> **Integration**: After tools work, memory becomes usable via tool calling
 
 ---
 
