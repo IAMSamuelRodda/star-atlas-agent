@@ -15,6 +15,7 @@ Usage:
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -22,8 +23,30 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-# API keys from environment
-BRAVE_API_KEY = os.environ.get("BRAVE_API_KEY", "")
+
+def _load_secrets() -> dict[str, str]:
+    """Load secrets from ~/.config/iris/secrets.env if it exists."""
+    secrets = {}
+    secrets_path = Path.home() / ".config" / "iris" / "secrets.env"
+
+    if secrets_path.exists():
+        try:
+            with open(secrets_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, _, value = line.partition("=")
+                        secrets[key.strip()] = value.strip()
+            logger.info(f"[Tools] Loaded secrets from {secrets_path}")
+        except Exception as e:
+            logger.warning(f"[Tools] Failed to load secrets: {e}")
+
+    return secrets
+
+
+# Load secrets from config file, fall back to environment variables
+_secrets = _load_secrets()
+BRAVE_API_KEY = _secrets.get("BRAVE_API_KEY") or os.environ.get("BRAVE_API_KEY", "")
 
 
 # ==============================================================================
@@ -173,7 +196,7 @@ def _web_search(query: str, count: int = 3) -> str:
         return (
             "Web search is not configured. To enable it:\n"
             "1. Get a free API key at https://brave.com/search/api/\n"
-            "2. Set BRAVE_API_KEY environment variable\n"
+            "2. Add to ~/.config/iris/secrets.env: BRAVE_API_KEY=your-key\n"
             "3. Restart IRIS"
         )
 

@@ -493,6 +493,47 @@ Option C: Hybrid
 
 ---
 
+### ARCH-012: First-Run Setup Wizard & Tool Management UI
+**Severity**: 🔮 Future | **Created**: 2025-12-06
+**Component**: voice-backend (DearPyGui)
+
+**Context**: Users need a friendly way to configure API keys and manage tools. Current approach requires manual file editing.
+
+**Proposed Features**:
+
+1. **First-Run Wizard**
+   - Detect missing `~/.config/iris/secrets.env`
+   - Modal dialog: "IRIS needs some API keys to unlock full functionality"
+   - Step-by-step guide with clickable links to signup pages
+   - Secure text input (masked) for API keys
+   - "Skip for now" option (graceful degradation)
+
+2. **Settings Panel** (in DearPyGui)
+   - API key management (add/update/remove, values masked)
+   - Tool enable/disable toggles
+   - Tool status indicators (configured, rate limited, error)
+
+3. **Tool Library** (Future)
+   - Browse community tools
+   - One-click install from curated library
+   - Custom tool registration (user-defined JSON schemas + Python)
+   - Tool versioning and updates
+
+**Security Considerations**:
+- Keys stored in `~/.config/iris/secrets.env` (user-only permissions)
+- Never log or display full key values
+- Consider OS keyring integration (Secret Service on Linux, Keychain on macOS)
+
+**Implementation Order**:
+1. ✅ MVP: Manual config file (`secrets.env`)
+2. 🔮 Phase 1: Settings panel with key management
+3. 🔮 Phase 2: First-run wizard
+4. 🔮 Phase 3: Tool library browser
+
+**Status**: 🔮 Future (after core tool integration complete)
+
+---
+
 ## Low Priority / Future (Riff Session 2025-12-05)
 
 ### ISSUE-015: Remove Temporary System Prompt Limitations
