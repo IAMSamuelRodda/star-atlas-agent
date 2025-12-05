@@ -354,11 +354,84 @@ converts them, but if you hear this:
 
 ---
 
+## LLM Infrastructure & Future Architecture
+
+### Current Setup: Ollama (Single Model)
+
+IRIS currently uses Ollama for local LLM inference. This is appropriate for:
+- Single-user voice assistant
+- Simple tool calling
+- Fast inference with ~0ms tool overhead
+
+### Future: Subagent Delegation Architecture
+
+When IRIS needs to perform complex tasks while preserving the main conversation context:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    IRIS Main Agent                           │
+│  (Conversational model - preserves user context)             │
+│                          │                                   │
+│    "I need to research that. Give me a moment..."           │
+│                          │                                   │
+│              ┌───────────┴───────────┐                      │
+│              ▼                       ▼                      │
+│     ┌─────────────┐         ┌─────────────┐                │
+│     │ Task Runner │         │ Deep Thinker │                │
+│     │ (small/fast)│         │ (larger model)│               │
+│     └─────────────┘         └─────────────┘                │
+│              │                       │                      │
+│              └───────────┬───────────┘                      │
+│                          ▼                                   │
+│              [Results returned to main agent]               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Current Limitation (Ollama)**:
+- `OLLAMA_MAX_LOADED_MODELS=2` - only 2 models hot at once
+- Model swaps take ~2-3 seconds
+- Acceptable for MVP with proper UX feedback
+
+**Future Migration Path**:
+- **vLLM**: Better concurrent model management, production-grade
+- **SGLang**: Superior tool calling with constrained decoding
+- See ISSUES.md ARCH-008 for trigger conditions
+
+### UX for Delegation
+
+When IRIS delegates to a subagent, user feedback is critical:
+
+```python
+# Example delegation flow
+async def delegate_research(query: str):
+    # 1. Inform user (they'll wait)
+    yield "Let me look into that for you..."
+
+    # 2. Run subagent (thinking model)
+    result = await thinking_agent.process(query)
+
+    # 3. Return with context
+    yield f"I found: {result.summary}"
+```
+
+**Key Principle**: IRIS communicates what she's doing. Users expect delays for complex tasks.
+
+### Context Window Optimization (Future)
+
+See ISSUES.md ARCH-009 for context window optimization strategies:
+- Conversation summarization
+- Sliding window with key facts
+- Tool result compression
+- Semantic chunking
+
+---
+
 ## Additional Resources
 
 - **Architecture**: `ARCHITECTURE.md` - Complete technical specifications
 - **Workflow Guide**: `CONTRIBUTING.md` - Git workflow and progress tracking
 - **Project Navigation**: `CLAUDE.md` - Quick reference for finding information
+- **Tool Research**: `specs/RESEARCH-tool-integration-architecture.md` - Ollama vs MCP tools
 
 ---
 

@@ -495,6 +495,13 @@
 | 7. Testing | 3 | 9 | 🔴 | Web E2E tests |
 | 8. CITADEL | 11 | 35 | 🔴 | Blocked on API |
 
+### 🔮 FUTURE (Post-Tool Integration)
+
+| Epic | Features | Status | Notes |
+|------|----------|--------|-------|
+| **9. Subagent Delegation** | 5 | 🔍 Spike | After tools (ARCH-008) |
+| **10. Context Optimization** | 5 | 🔍 Spike | After delegation (ARCH-009) |
+
 > **Last Updated**: 2025-12-05
 > **Focus**: Native Primary, Web Secondary
 > **Native MVP**: DearPyGui desktop app with local Ollama + faster-whisper + Kokoro
@@ -517,6 +524,46 @@
 - task_4_3_3 partial: Latency optimization subtasks (measure first, optimize later)
 - Epic 8: CITADEL Integration (entire epic is post-MVP)
 - CI/CD pipelines (main-only workflow, deploy via docker-compose)
+
+---
+
+## Future Roadmap (Post-Tool Integration)
+
+> **When**: After Feature 0.7 (Local Tools) is complete
+> **Why**: Tools enable agent functionality; next step is preserving context during complex tasks
+> **Reference**: ISSUES.md (ARCH-008, ARCH-009), DEVELOPMENT.md (LLM Infrastructure section)
+
+### 🔮 Epic 9: Subagent Delegation Architecture (FUTURE)
+
+**Status**: 🔍 Needs Spike | **Prerequisite**: Feature 0.7 complete
+**Issue**: ARCH-008
+
+| Feature | Description | Complexity |
+|---------|-------------|------------|
+| 9.1 | Model router (main + task runner selection) | 2.5 |
+| 9.2 | Delegation protocol (context handoff) | 3.0 |
+| 9.3 | Result integration (subagent → main) | 2.8 |
+| 9.4 | UX feedback (communicating delays to user) | 2.0 |
+| 9.5 | Model swap optimization (Ollama 2-model limit) | 2.5 |
+
+> **Current Limitation**: Ollama supports max 2 models loaded simultaneously
+> **Migration Trigger**: Need >2 concurrent models → evaluate vLLM/SGLang
+
+### 🔮 Epic 10: Context Window Optimization (FUTURE)
+
+**Status**: 🔍 Needs Spike | **Prerequisite**: Epic 9 functional
+**Issue**: ARCH-009
+
+| Feature | Description | Complexity |
+|---------|-------------|------------|
+| 10.1 | Conversation summarization (rolling summary) | 2.8 |
+| 10.2 | Sliding window with key facts | 2.5 |
+| 10.3 | Tool result compression | 2.3 |
+| 10.4 | Semantic chunking for long contexts | 3.0 |
+| 10.5 | Context budget monitoring | 2.0 |
+
+> **Goal**: Squeeze more context from models for natural conversations
+> **Approach**: Summarize older messages, compress tool outputs, preserve key facts
 
 ---
 

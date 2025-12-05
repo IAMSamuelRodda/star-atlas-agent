@@ -223,6 +223,112 @@ When users ramble, they often want to be *heard* first:
 
 ---
 
+## Future Architecture (Investigation Items)
+
+### ARCH-008: Subagent Delegation & Multi-Model Infrastructure
+**Severity**: 🔮 Future | **Created**: 2025-12-05
+**Component**: LLM infrastructure
+
+**Context**: IRIS will need to delegate complex tasks to subagents while preserving main conversation context (similar to Claude Code's task runners).
+
+**Current State (Ollama)**:
+- `OLLAMA_MAX_LOADED_MODELS=2` - max 2 models hot
+- Model swaps: ~2-3 seconds
+- Acceptable for MVP with UX feedback ("Let me look into that...")
+
+**Triggers to Investigate vLLM/SGLang**:
+| Trigger | Platform to Evaluate |
+|---------|---------------------|
+| Need 3+ models simultaneously | vLLM |
+| Tool calling unreliable with complex schemas | SGLang |
+| Scaling to multiple users | vLLM or TGI |
+| Need constrained JSON output | SGLang |
+
+**Subagent Use Cases**:
+1. **Task Runners**: Small/fast model for simple tool execution
+2. **Deep Thinkers**: Larger model for complex reasoning
+3. **Specialists**: Domain-specific fine-tuned models
+
+**MVP Approach**:
+- 2 models: conversational (qwen2.5:7b) + thinking (can swap to larger)
+- UX communicates delegation: "I need to think about that..."
+- User expects delay for complex tasks
+
+**Future Architecture** (when Ollama limits hit):
+```
+vLLM Server (keeps multiple models warm):
+├── Main conversational model (always hot)
+├── Task runner model (hot)
+├── Deep thinking model (load on demand)
+└── Specialist models (pool)
+```
+
+**Research Needed**:
+- [ ] Benchmark Ollama model swap latency
+- [ ] Test vLLM concurrent model loading
+- [ ] Evaluate SGLang for tool calling reliability
+- [ ] Design delegation protocol (context passing)
+
+**Status**: 🔮 Future (implement delegation logic with Ollama first, migrate infrastructure when limits hit)
+
+---
+
+### ARCH-009: Context Window Optimization
+**Severity**: 🔮 Future | **Created**: 2025-12-05
+**Component**: Conversation management
+
+**Context**: More context = more natural conversation + more useful agent. Need strategies to maximize effective context usage.
+
+**Current State**:
+- Rolling 10-turn history (~20 messages)
+- No summarization
+- Tool results stored in full
+- Interruption context persisted
+
+**Problem Areas**:
+1. Long conversations lose early context
+2. Tool results consume tokens (especially large API responses)
+3. No distinction between "must remember" vs "nice to have"
+
+**Optimization Strategies to Investigate**:
+
+| Strategy | Description | Complexity |
+|----------|-------------|------------|
+| **Conversation summarization** | Compress old turns to summaries | Medium |
+| **Sliding window + key facts** | Keep recent + extract important facts | Medium |
+| **Tool result compression** | Summarize large API responses | Low |
+| **Semantic chunking** | Store/retrieve by relevance | High |
+| **Memory tier separation** | Hot (recent) vs warm (session) vs cold (persistent) | High |
+
+**Conversation Summarization Pattern**:
+```python
+# When context exceeds threshold
+if token_count > MAX_CONTEXT * 0.8:
+    old_turns = conversation[:-5]  # Keep last 5 fresh
+    summary = summarize_llm(old_turns)  # Compress to ~200 tokens
+    conversation = [{"role": "system", "content": f"Earlier: {summary}"}] + conversation[-5:]
+```
+
+**Tool Result Compression Pattern**:
+```python
+# For large tool responses
+if len(tool_result) > 1000:
+    compressed = summarize_llm(f"Summarize key data: {tool_result}")
+    return f"[Tool returned {len(tool_result)} chars, summary: {compressed}]"
+```
+
+**Key Insight**: Context window is precious for voice assistants. Every token spent on old/redundant info is a token not available for nuanced responses.
+
+**Benchmarks Needed**:
+- [ ] Measure current token usage per conversation turn
+- [ ] Test summarization quality at various compression ratios
+- [ ] Measure latency impact of summarization step
+- [ ] A/B test user perception of context-aware vs context-limited
+
+**Status**: 🔮 Future (focus after tools are working)
+
+---
+
 ## Low Priority / Future (Riff Session 2025-12-05)
 
 ### ISSUE-015: Remove Temporary System Prompt Limitations
