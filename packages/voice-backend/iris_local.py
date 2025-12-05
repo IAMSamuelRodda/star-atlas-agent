@@ -672,6 +672,100 @@ def run_vad_mode(iris: IrisLocal):
 # Main Entry Point
 # ==============================================================================
 
+def run_gui_mode(iris: IrisLocal):
+    """
+    Run with DearPyGui graphical interface.
+
+    Provides visual waveform, PTT button, transcript display, and config panel.
+    """
+    try:
+        from iris_gui import IrisGUI
+    except ImportError:
+        logger.error("DearPyGui not installed. Install with: uv pip install dearpygui")
+        return
+
+    gui = IrisGUI(iris)
+
+    # Wire up callbacks
+    audio_buffer = []
+    recording_active = False
+
+    def on_ptt_start():
+        nonlocal audio_buffer, recording_active
+        audio_buffer = []
+        recording_active = True
+
+        # Start recording in background
+        def record():
+            def on_chunk(chunk):
+                if recording_active:
+                    audio_buffer.append(chunk)
+                    gui._audio_queue.put(chunk)  # Update waveform
+
+            iris.audio.record_until_release(on_chunk)
+
+        threading.Thread(target=record, daemon=True).start()
+
+    def on_ptt_stop():
+        nonlocal recording_active
+        recording_active = False
+        iris.audio.stop_recording()
+
+        # Process audio
+        if audio_buffer:
+            audio = np.concatenate(audio_buffer)
+            duration = len(audio) / iris.config.sample_rate_in
+
+            if duration > 0.3:  # Minimum 300ms
+                gui.add_message("user", "[recording...]")
+                gui._update_status("Processing...", gui.COLOR_ACCENT)
+                gui._set_pipeline_status("stt", "active")
+
+                # Process in background
+                def process():
+                    try:
+                        # STT
+                        text = iris.transcribe(audio)
+                        if text.strip():
+                            gui.state.messages[-1]["content"] = text  # Update placeholder
+                            gui._update_transcript()
+
+                            # LLM + TTS
+                            gui._set_pipeline_status("stt", "done")
+                            gui._set_pipeline_status("llm", "active")
+
+                            response = iris._call_llm(text)
+
+                            gui._set_pipeline_status("llm", "done")
+                            gui._set_pipeline_status("tts", "active")
+
+                            gui.add_message("assistant", response)
+
+                            # TTS playback
+                            iris.speak(response)
+
+                            gui._set_pipeline_status("tts", "done")
+                        else:
+                            gui._update_status("No speech detected", gui.COLOR_ERROR)
+
+                    except Exception as e:
+                        logger.exception("Processing error")
+                        gui._update_status(f"Error: {e}", gui.COLOR_ERROR)
+                    finally:
+                        gui._update_status("Ready", gui.COLOR_SUCCESS)
+                        gui._set_pipeline_status("stt", "idle")
+                        gui._set_pipeline_status("llm", "idle")
+                        gui._set_pipeline_status("tts", "idle")
+
+                threading.Thread(target=process, daemon=True).start()
+
+    gui.on_ptt_start = on_ptt_start
+    gui.on_ptt_stop = on_ptt_stop
+
+    gui.setup()
+    gui.run()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="IRIS Local - Native Python voice client",
@@ -680,6 +774,7 @@ def main():
 Examples:
     python iris_local.py                     # PTT mode (default)
     python iris_local.py --vad               # Always-listening mode
+    python iris_local.py --gui               # Graphical interface
     python iris_local.py --model mistral:7b  # Use different LLM
     python iris_local.py --list-devices      # List audio devices
         """
@@ -687,6 +782,8 @@ Examples:
 
     parser.add_argument("--vad", action="store_true",
                        help="Enable VAD (always-listening) mode")
+    parser.add_argument("--gui", action="store_true",
+                       help="Launch graphical interface (DearPyGui)")
     parser.add_argument("--model", default=None,
                        help="Ollama model to use (default: from OLLAMA_MODEL env)")
     parser.add_argument("--cpu", action="store_true",
@@ -728,7 +825,9 @@ Examples:
         iris.warmup()
 
     # Run appropriate mode
-    if args.vad:
+    if args.gui:
+        run_gui_mode(iris)
+    elif args.vad:
         run_vad_mode(iris)
     else:
         run_ptt_mode(iris)

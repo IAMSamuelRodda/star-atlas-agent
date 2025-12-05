@@ -241,9 +241,16 @@ None
 - **New client**: `packages/voice-backend/iris_local.py` - native Python voice client
 - **Zero web stack**: Direct sounddevice audio I/O (no WebSocket, no base64)
 - **Silero VAD integration**: Always-listening mode with speech detection
-- **Two modes**:
-  - PTT (Push-to-Talk): Press Enter to record
-  - VAD (Voice Activity Detection): Auto-detects speech start/end
+- **Three modes**:
+  - PTT (Push-to-Talk): Press Enter to record (CLI)
+  - VAD (Voice Activity Detection): Auto-detects speech start/end (CLI)
+  - GUI (DearPyGui): Visual interface with waveform, transcript, config
+- **GUI features** (`python iris_local.py --gui`):
+  - Real-time waveform visualizer
+  - PTT button and VAD toggle
+  - Conversation transcript display
+  - Pipeline status indicators (STT/LLM/TTS)
+  - Config panel (model, voice, max tokens)
 - **Benchmark results** (warm components):
   - First audio: **96-123ms** (vs 300-500ms with web stack)
   - LLM first token: 73-78ms
@@ -253,8 +260,8 @@ None
   Microphone → sounddevice → VAD → STT → LLM → TTS → sounddevice → Speaker
   ```
 - **Dependencies added**: `sounddevice` (local), `dearpygui` (gui) optional extras
-- **Usage**: `python iris_local.py --vad` for always-listening mode
-- **Future**: DearPyGui interface, IPC for game integration (see ASP-003)
+- **Usage**: `python iris_local.py --gui` for graphical interface
+- **Future**: IPC for game integration (see ASP-003 in ISSUES.md)
 
 **Streaming Stress Test & Benchmarks (2025-12-05)**
 - **New test harness**: `packages/voice-backend/test_streaming_stress.py`
