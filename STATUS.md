@@ -122,6 +122,12 @@
   - ✅ Fixed: Audio overlap (ack + response now play sequentially)
 
 **In Progress:**
+- 🟡 **Local Tool Integration** (2025-12-05):
+  - Goal: Give IRIS ability to use tools without waiting for CITADEL API
+  - Tools planned: time/date, calculator, web search, timers/reminders
+  - Implementation: Ollama function calling for compatible models
+  - Status: Planning complete, implementation starting
+
 - ✅ **Voice Latency Architecture Overhaul** (2025-12-03 - ARCH-003) **COMPLETE**:
   - ✅ Phase 1.1: WebSocket endpoint added to Python FastAPI (`/ws/voice`)
   - ✅ Phase 1.3: Browser VoiceClient updated for direct Python connection
@@ -236,6 +242,50 @@ None
 ---
 
 ## Recent Achievements (Last 2 Weeks)
+
+**GUI Improvements & Bug Fixes (2025-12-05)**
+- **Audio overlap race condition**: Fixed with threading mutex lock
+  - `_processing_lock` prevents multiple VAD responses playing simultaneously
+  - Lock acquired before processing, released in `finally` block
+- **VAD toggle buffer flush**: Audio captured mid-recording now processed when VAD disabled
+  - Instance-level `_vad_audio_buffer` and `_vad_is_speaking` for state tracking
+  - `_stop_vad_listening()` flushes buffered audio ≥1s before stopping
+- **Interruption context GUI panel**: Visual display of interruption state
+  - Shows: intended response, spoken text, user interruption
+  - Color-coded labels, auto-truncation, time display ("Interrupted Xs ago")
+  - Updates on interruption record, user STT, and periodic refresh (1s)
+- **Interruption context persistence**: Added to conversation history for LLM recall
+  - Interruption note stored as assistant message in `_conversation_history`
+  - IRIS can now answer "what did I miss?" after interruptions
+  - Log: `[LLM] Added interruption context to history`
+
+**Model-Specific System Prompts (2025-12-05)**
+- **Layered prompt architecture**: Base prompt + model-specific additions
+  - `SYSTEM_PROMPT_BASE`: Core personality and rules (all models)
+  - `MODEL_PROMPTS`: Dict of model family → specific instructions
+  - `get_system_prompt(model_name)`: Combines them at runtime
+- **Current model-specific rules**:
+  - Qwen: English only, no Chinese characters or emoji
+  - Mistral: More concise, avoid verbosity
+  - Llama: Stay focused, skip caveats
+  - Phi: Extremely brief responses
+- **Logging**: Shows which prompt variant is used (`[LLM] Using QWEN-specific system prompt`)
+- **Tracked**: ISSUE-015 for removing limitations when tools are integrated
+
+**Conversation Memory & Context Tracking (2025-12-05)**
+- **Conversation history**: IRIS now remembers previous exchanges using Ollama `/api/chat`
+  - Maintains last 10 turns (20 messages) in rolling history
+  - Includes interruption context in prompts (what was intended vs spoken)
+- **Context window tracking**: Token usage displayed in GUI and logged
+  - GUI shows: `Context: X tokens (Y/10 turns)` in config section
+  - Logs: `[LLM] Tokens: X prompt + Y completion = Z total (session: N)`
+- **Minimum audio filter**: Increased from 0.3s to 1.0s to reduce false VAD triggers
+- **System prompt improvements**: Explicit rules to prevent hallucinations
+  - No placeholder text like `[Event Name]`, `[Time]`, `[Location]`
+  - Clear statement of limitations (no fleet data, wallet, APIs in local mode)
+- **Smooth interruptible playback**: Fixed choppy audio during barge-in
+  - Continuous `sd.play()` with 50ms interrupt polling (was 100ms chunked)
+- **Thread-safe VAD**: Separate VAD instance for barge-in monitor (prevents state corruption)
 
 **Desktop Launcher & Interruption Architecture (2025-12-05)**
 - **Desktop launcher**: `iris-local.desktop` + `iris-local-launcher.sh` for dock integration

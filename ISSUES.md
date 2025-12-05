@@ -163,21 +163,31 @@ LLM: [already has direction, generates immediately]
 ## Medium Priority (Riff Session 2025-12-05)
 
 ### ISSUE-010: Model-Specific System Prompts Needed
-**Severity**: 🟠 Medium | **Created**: 2025-12-05
-**Component**: agent-core, narrator
+**Severity**: 🟠 Medium | **Created**: 2025-12-05 | **Status**: ✅ Implemented (basic)
+**Component**: voice-backend (iris_local.py)
 
 **Problem**: Different models respond better to different prompt structures. Currently using one-size-fits-all.
 
-**Proposal**:
-1. Prompt library per model family (Qwen, Llama, Claude, Mistral)
-2. Dynamic prompt loading when narrator model changes
-3. Fallback to generic if no specific prompt exists
+**Solution Implemented** (2025-12-05):
+```python
+SYSTEM_PROMPT_BASE = "..."  # Core personality (all models)
+MODEL_PROMPTS = {
+    "qwen": "...",    # English only, no Chinese/emoji
+    "mistral": "...", # More concise
+    "llama": "...",   # Stay focused
+    "phi": "...",     # Extremely brief
+}
+get_system_prompt(model_name) → combines base + model-specific
+```
+
+**Location**: `packages/voice-backend/iris_local.py:76-154`
 
 **Action Items**:
-- [ ] Audit current system prompts
-- [ ] Create model-specific variants
-- [ ] A/B test verbosity control per model
-- [ ] Implement dynamic prompt loader in narrator
+- [x] Create model-specific variants
+- [x] Implement dynamic prompt loader (`get_system_prompt()`)
+- [x] Logging shows which variant is used
+- [ ] A/B test verbosity control per model (future)
+- [ ] Extend to narrator module (future)
 
 ---
 
@@ -214,6 +224,35 @@ When users ramble, they often want to be *heard* first:
 ---
 
 ## Low Priority / Future (Riff Session 2025-12-05)
+
+### ISSUE-015: Remove Temporary System Prompt Limitations
+**Severity**: 🟢 Low | **Created**: 2025-12-05 | **Status**: Blocked (waiting for tools)
+**Component**: voice-backend (iris_local.py)
+
+**Context**: The local IRIS client has temporary system prompt restrictions to prevent hallucinations while MCP tools are not integrated.
+
+**Current Limitations** (in `IrisConfig.system_prompt`):
+```
+- NEVER use placeholder text like [Event Name], [Time], [Location], etc.
+- NEVER pretend you can access real-time data, calendars, or external systems
+- You DON'T have access to: fleet data, wallet balances, real-time prices, or game APIs
+- If asked about these, explain you're in local testing mode without those integrations
+```
+
+**When to Remove**: After integrating:
+1. MCP tools for fleet status, wallet balance, transaction history
+2. CITADEL REST API wrappers for real-time game data
+3. Price/market data endpoints
+
+**Action Items**:
+- [ ] Track MCP tool integration progress (ARCH-001)
+- [ ] Update system prompt when tools are available
+- [ ] Test that IRIS correctly uses tools instead of hallucinating
+- [ ] Consider keeping some anti-hallucination rules even with tools (for edge cases)
+
+**File Location**: `packages/voice-backend/iris_local.py:109-122`
+
+---
 
 ### ISSUE-012: Ambient Audio Cues
 **Severity**: 🟢 Low | **Created**: 2025-12-05 | **Status**: Idea

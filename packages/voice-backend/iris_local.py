@@ -74,6 +74,87 @@ logger = logging.getLogger(__name__)
 
 
 # ==============================================================================
+# System Prompts (Global + Model-Specific)
+# ==============================================================================
+
+# TODO(ISSUE-015): Remove capability limitations when MCP tools are integrated
+# See ISSUES.md for tracking. Current restrictions prevent hallucinations in local testing mode.
+
+SYSTEM_PROMPT_BASE = """You are IRIS, a voice assistant for Star Atlas players.
+
+CRITICAL RULES:
+- Keep responses SHORT (1-2 sentences max) - they will be spoken aloud
+- NEVER use placeholder text like [Event Name], [Time], [Location], etc.
+- NEVER pretend you can access real-time data, calendars, or external systems
+- If you don't know something specific, say so directly
+- No markdown, bullet points, or special formatting
+- Speak naturally as if in conversation
+
+You're a helpful companion who chats about Star Atlas, space gaming, and general topics.
+You DON'T have access to: fleet data, wallet balances, real-time prices, or game APIs.
+If asked about these, explain you're in local testing mode without those integrations."""
+
+# Model-specific prompts - keyed by model family (prefix match)
+# These are APPENDED to the base prompt for specific model quirks
+MODEL_PROMPTS: dict[str, str] = {
+    "qwen": """
+
+QWEN-SPECIFIC:
+- Respond ONLY in English, never Chinese characters
+- Don't use emoji or special unicode symbols""",
+
+    "mistral": """
+
+MISTRAL-SPECIFIC:
+- Be more concise than your default - aim for 1 sentence when possible
+- Avoid being overly formal or verbose""",
+
+    "llama": """
+
+LLAMA-SPECIFIC:
+- Stay focused on the question asked
+- Don't add unnecessary caveats or disclaimers""",
+
+    "phi": """
+
+PHI-SPECIFIC:
+- Keep responses extremely brief (1 sentence ideal)
+- Don't over-explain simple concepts""",
+}
+
+
+def get_system_prompt(model_name: str, log: bool = False) -> str:
+    """
+    Build system prompt from base + model-specific additions.
+
+    Args:
+        model_name: Ollama model name (e.g., "qwen2.5:7b", "mistral:7b")
+        log: If True, log which model-specific prompt was used
+
+    Returns:
+        Combined system prompt
+    """
+    prompt = SYSTEM_PROMPT_BASE
+    matched_family = None
+
+    # Find matching model-specific prompt (prefix match)
+    model_lower = model_name.lower()
+    for model_family, model_prompt in MODEL_PROMPTS.items():
+        if model_lower.startswith(model_family):
+            prompt += model_prompt
+            matched_family = model_family
+            break
+
+    if log:
+        if matched_family:
+            logger.info(f"[LLM] Using {matched_family.upper()}-specific system prompt")
+        else:
+            logger.info(f"[LLM] Using base system prompt (no model-specific rules for {model_name})")
+
+    return prompt
+
+
+# ==============================================================================
 # Configuration
 # ==============================================================================
 
@@ -104,12 +185,7 @@ class IrisConfig:
     # VAD
     vad_threshold: float = 0.5
     silence_duration: float = 0.5  # Seconds of silence to end recording
-    min_speech_duration: float = 0.3  # Minimum speech to process
-
-    # System
-    system_prompt: str = """You are IRIS, the AI assistant for Star Atlas players.
-Keep responses SHORT (1-2 sentences max) - they will be spoken aloud.
-Be helpful, friendly, and concise. No markdown or special formatting."""
+    min_speech_duration: float = 1.0  # Minimum speech to process (filters short noises)
 
 
 # ==============================================================================
@@ -500,6 +576,8 @@ class IrisLocal:
         if self._tts is None:
             from src.tts_kokoro import get_kokoro_tts
             self._tts = get_kokoro_tts(self.config.tts_device)
+            # Set voice from config
+            self._tts.current_voice = self.config.tts_voice
         return self._tts
 
     def warmup(self):
@@ -611,7 +689,7 @@ class IrisLocal:
         payload = {
             "model": self.config.ollama_model,
             "prompt": prompt,
-            "system": self.config.system_prompt,
+            "system": get_system_prompt(self.config.ollama_model),
             "stream": True,
             "options": {
                 "num_predict": self.config.max_tokens,
@@ -672,22 +750,23 @@ class IrisLocal:
             # For streaming, caller should use _call_llm_stream directly
             return "".join(self._call_llm_stream(prompt))
 
-        # Build messages with history
-        messages = [{"role": "system", "content": self.config.system_prompt}]
+        # Build messages with history (uses model-specific system prompt)
+        messages = [{"role": "system", "content": get_system_prompt(self.config.ollama_model, log=True)}]
 
-        # Add interruption context if present
+        # Add interruption context if present - persist in conversation history
         if self._last_interruption:
             ie = self._last_interruption
-            interruption_note = {
-                "role": "system",
-                "content": (
-                    f"[Interruption context: Your previous response was interrupted. "
-                    f"You intended to say: \"{ie.intended_response}\" "
-                    f"but user only heard: \"{ie.spoken_up_to}\". "
-                    f"They then interrupted with what follows.]"
-                )
-            }
-            messages.append(interruption_note)
+            interruption_note = (
+                f"[INTERRUPTION: You were interrupted. "
+                f"You intended to say: \"{ie.intended_response}\" "
+                f"but user only heard: \"{ie.spoken_up_to}\"]"
+            )
+            # Add to conversation history so it persists for future reference
+            self._conversation_history.append({
+                "role": "assistant",
+                "content": interruption_note
+            })
+            logger.info(f"[LLM] Added interruption context to history")
             self._last_interruption = None
 
         # Add conversation history
@@ -830,16 +909,20 @@ class IrisLocal:
         """
         total_start = time.perf_counter()
 
-        # Check for previous interruption context
-        interruption_context = ""
+        # Check for previous interruption context - add to conversation history
         if self._last_interruption:
             ie = self._last_interruption
-            interruption_context = (
-                f"\n[Note: Your previous response was interrupted. "
-                f"You intended to say: \"{ie.intended_response[:100]}...\" "
-                f"but user only heard: \"{ie.spoken_up_to}\". "
-                f"They then said: \"{ie.user_interruption}\"]"
+            interruption_note = (
+                f"[INTERRUPTION: You were interrupted. "
+                f"You intended to say: \"{ie.intended_response}\" "
+                f"but user only heard: \"{ie.spoken_up_to}\"]"
             )
+            # Add to conversation history so it persists for future reference
+            self._conversation_history.append({
+                "role": "assistant",
+                "content": interruption_note
+            })
+            logger.info(f"[LLM] Added interruption context to history")
             self._last_interruption = None
 
         # STT
@@ -848,8 +931,7 @@ class IrisLocal:
             logger.info("[Pipeline] No speech detected")
             return ""
 
-        # Add interruption context if present
-        prompt = text + interruption_context
+        prompt = text
 
         # LLM (streaming) + TTS (progressive with interruption)
         logger.info(f"[LLM] Generating response...")

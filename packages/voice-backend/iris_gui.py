@@ -148,6 +148,12 @@ class IrisGUI:
         # VAD state
         self._vad_active = False
         self._vad_thread = None
+        self._vad_audio_buffer = []  # Store audio during VAD recording
+        self._vad_is_speaking = False  # Track if speech is in progress
+
+        # Processing lock to prevent audio overlap
+        self._processing_lock = threading.Lock()
+        self._is_processing = False
 
         # Get available audio devices
         self.input_devices, self.output_devices = self.get_audio_devices()
@@ -196,9 +202,11 @@ class IrisGUI:
                     self._create_waveform_section()
                     self._create_control_section()
 
-                # Right panel: Transcript
+                # Right panel: Transcript + Interruption Context
                 with dpg.child_window(width=-1, height=400, tag="right_panel"):
                     self._create_transcript_section()
+                    dpg.add_separator()
+                    self._create_interruption_section()
 
             # Bottom section: Config
             dpg.add_separator()
@@ -292,9 +300,35 @@ class IrisGUI:
         """Create the conversation transcript display."""
         dpg.add_text("Conversation", color=self.COLOR_TEXT_DIM)
 
-        # Scrollable transcript area
-        with dpg.child_window(height=-1, tag="transcript_window", border=False):
+        # Scrollable transcript area (fixed height to leave room for interruption section)
+        with dpg.child_window(height=250, tag="transcript_window", border=False):
             dpg.add_text("", tag="transcript_text", wrap=450)
+
+    def _create_interruption_section(self):
+        """Create the interruption context display."""
+        dpg.add_text("Interruption Context", color=self.COLOR_TEXT_DIM)
+
+        with dpg.child_window(height=-1, tag="interruption_window", border=False):
+            # Header showing if there's an active interruption
+            dpg.add_text("No interruption recorded", tag="interruption_status",
+                        color=self.COLOR_TEXT_DIM)
+
+            dpg.add_spacer(height=5)
+
+            # Intended response (what LLM generated)
+            with dpg.group(horizontal=True):
+                dpg.add_text("Intended:", color=self.COLOR_ACCENT)
+                dpg.add_text("—", tag="interruption_intended", wrap=380)
+
+            # Spoken up to (what was actually said)
+            with dpg.group(horizontal=True):
+                dpg.add_text("Spoken:", color=self.COLOR_SUCCESS)
+                dpg.add_text("—", tag="interruption_spoken", wrap=380)
+
+            # User interruption (what user said to interrupt)
+            with dpg.group(horizontal=True):
+                dpg.add_text("User:", color=self.COLOR_PRIMARY)
+                dpg.add_text("—", tag="interruption_user", wrap=380)
 
     def _create_config_section(self):
         """Create the configuration panel."""
@@ -432,7 +466,13 @@ class IrisGUI:
     def _on_voice_change(self, sender, app_data):
         """Handle voice selection change."""
         self.state.voice = app_data
+        if self.iris:
+            self.iris.config.tts_voice = app_data
+            # Update the TTS instance's current voice
+            if self.iris._tts is not None:
+                self.iris._tts.current_voice = app_data
         self._update_status(f"Voice: {app_data}")
+        logger.info(f"[TTS] Voice changed to: {app_data}")
 
     def _on_max_tokens_change(self, sender, app_data):
         """Handle max tokens change."""
@@ -500,8 +540,33 @@ class IrisGUI:
         logger.info("[VAD] Started always-listening mode")
 
     def _stop_vad_listening(self):
-        """Stop VAD-based listening."""
+        """Stop VAD-based listening, flushing any buffered audio."""
+        # Signal the loop to stop
         self._vad_active = False
+
+        # Flush any buffered audio if speech was in progress
+        if self._vad_is_speaking and self._vad_audio_buffer:
+            audio = np.concatenate(self._vad_audio_buffer)
+            min_samples = int(1.0 * 16000)  # Same threshold as in loop
+
+            if len(audio) >= min_samples:
+                duration = len(audio) / 16000
+                logger.info(f"[VAD] Flushing buffered audio on stop ({duration:.1f}s)")
+
+                # Process the buffered audio
+                threading.Thread(
+                    target=self._process_vad_audio,
+                    args=(audio,),
+                    daemon=True
+                ).start()
+            else:
+                duration = len(audio) / 16000
+                logger.debug(f"[VAD] Buffered audio too short ({duration:.1f}s), discarding")
+
+        # Clear buffer state
+        self._vad_audio_buffer = []
+        self._vad_is_speaking = False
+
         if self._vad_thread is not None:
             self._vad_thread.join(timeout=1)
             self._vad_thread = None
@@ -515,12 +580,13 @@ class IrisGUI:
             logger.error("[VAD] No IRIS instance available")
             return
 
-        # Audio buffer for speech detection
-        audio_buffer = []
-        is_speaking = False
+        # Reset instance-level buffer state (used for flush on stop)
+        self._vad_audio_buffer = []
+        self._vad_is_speaking = False
+
         silence_samples = 0
         silence_threshold = int(0.5 * 16000)  # 0.5s silence to end
-        min_samples = int(0.3 * 16000)  # Minimum 0.3s speech
+        min_samples = int(1.0 * 16000)  # Minimum 1.0s speech (filter short noises)
         chunk_samples = 512
 
         # Start ffmpeg process for continuous capture
@@ -560,25 +626,25 @@ class IrisGUI:
                 is_speech, confidence = self.iris.vad.is_speech(chunk)
 
                 if is_speech:
-                    if not is_speaking:
+                    if not self._vad_is_speaking:
                         logger.info(f"[VAD] Speech detected (confidence: {confidence:.2f})")
-                        is_speaking = True
-                        audio_buffer = []
+                        self._vad_is_speaking = True
+                        self._vad_audio_buffer = []
                         self._update_status("Listening...", self.COLOR_ACCENT)
 
-                    audio_buffer.append(chunk)
+                    self._vad_audio_buffer.append(chunk)
                     silence_samples = 0
                 else:
-                    if is_speaking:
+                    if self._vad_is_speaking:
                         silence_samples += len(chunk)
-                        audio_buffer.append(chunk)
+                        self._vad_audio_buffer.append(chunk)
 
                         if silence_samples >= silence_threshold:
                             # Speech ended - process it
-                            is_speaking = False
+                            self._vad_is_speaking = False
 
-                            if audio_buffer:
-                                audio = np.concatenate(audio_buffer)
+                            if self._vad_audio_buffer:
+                                audio = np.concatenate(self._vad_audio_buffer)
 
                                 if len(audio) >= min_samples:
                                     duration = len(audio) / 16000
@@ -590,8 +656,11 @@ class IrisGUI:
                                         args=(audio,),
                                         daemon=True
                                     ).start()
+                                else:
+                                    duration = len(audio) / 16000
+                                    logger.debug(f"[VAD] Audio too short ({duration:.1f}s < 1.0s), ignoring")
 
-                            audio_buffer = []
+                            self._vad_audio_buffer = []
                             silence_samples = 0
                             self._update_status("VAD: Listening...", self.COLOR_SUCCESS)
         finally:
@@ -600,6 +669,13 @@ class IrisGUI:
 
     def _process_vad_audio(self, audio: np.ndarray):
         """Process audio captured by VAD with interruption support."""
+        # Acquire lock to prevent overlapping responses
+        if not self._processing_lock.acquire(blocking=False):
+            logger.info("[VAD] Already processing, queueing audio for later")
+            # TODO: Could queue this audio instead of dropping
+            return
+
+        self._is_processing = True
         try:
             self._set_pipeline_status("stt", "active")
             self._update_status("Processing...", self.COLOR_ACCENT)
@@ -611,6 +687,7 @@ class IrisGUI:
                 # Fill in user_interruption if this was an interruption
                 if self.iris._last_interruption:
                     self.iris._last_interruption.user_interruption = text
+                    self._update_interruption_context()
 
                 self.add_message("user", text)
                 self._set_pipeline_status("stt", "done")
@@ -645,6 +722,7 @@ class IrisGUI:
                         )
                         logger.info(f"[GUI] Interruption recorded. Spoken: \"{spoken_text[:50]}...\"")
                         self._update_status("Interrupted! Listening...", self.COLOR_ACCENT)
+                        self._update_interruption_context()
                 finally:
                     self.iris._is_speaking = False
                     self.iris._stop_vad_monitor()
@@ -657,6 +735,10 @@ class IrisGUI:
             logger.exception("VAD processing error")
             self._update_status(f"Error: {e}", self.COLOR_ERROR)
         finally:
+            # Release processing lock
+            self._is_processing = False
+            self._processing_lock.release()
+
             self._set_pipeline_status("stt", "idle")
             self._set_pipeline_status("llm", "idle")
             self._set_pipeline_status("tts", "idle")
@@ -693,6 +775,39 @@ class IrisGUI:
         stats = self.iris.get_context_stats()
         text = f"{stats['session_tokens']:,} tokens ({stats['history_turns']}/{stats['max_history_turns']} turns)"
         dpg.set_value("context_stats", text)
+
+    def _update_interruption_context(self):
+        """Update the interruption context display."""
+        if self.iris is None or self.iris._last_interruption is None:
+            dpg.set_value("interruption_status", "No interruption recorded")
+            dpg.configure_item("interruption_status", color=self.COLOR_TEXT_DIM)
+            dpg.set_value("interruption_intended", "—")
+            dpg.set_value("interruption_spoken", "—")
+            dpg.set_value("interruption_user", "—")
+            return
+
+        event = self.iris._last_interruption
+
+        # Update status
+        import time
+        age = time.time() - event.timestamp
+        if age < 60:
+            status = f"Interrupted {age:.0f}s ago"
+        else:
+            status = f"Interrupted {age/60:.0f}m ago"
+        dpg.set_value("interruption_status", status)
+        dpg.configure_item("interruption_status", color=self.COLOR_ACCENT)
+
+        # Truncate long text for display
+        def truncate(text: str, max_len: int = 100) -> str:
+            if len(text) > max_len:
+                return text[:max_len] + "..."
+            return text
+
+        # Update fields
+        dpg.set_value("interruption_intended", truncate(event.intended_response))
+        dpg.set_value("interruption_spoken", truncate(event.spoken_up_to) if event.spoken_up_to else "(nothing)")
+        dpg.set_value("interruption_user", event.user_interruption if event.user_interruption else "(pending...)")
 
     def update_waveform(self, audio_data: np.ndarray):
         """Update the waveform display with new audio data."""
@@ -764,6 +879,16 @@ class IrisGUI:
                 self.update_waveform(audio)
         except queue.Empty:
             pass
+
+        # Periodically update interruption context (for time display)
+        # Throttle to once per second
+        current_time = time.time()
+        if not hasattr(self, '_last_interruption_update'):
+            self._last_interruption_update = 0
+        if current_time - self._last_interruption_update >= 1.0:
+            self._last_interruption_update = current_time
+            if self.iris and self.iris._last_interruption:
+                self._update_interruption_context()
 
     def stop(self):
         """Stop the GUI."""

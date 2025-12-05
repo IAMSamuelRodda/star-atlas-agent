@@ -306,6 +306,34 @@
 
 ---
 
+## Epic 7b: Native Client Local Tools (NEW)
+
+**Estimated**: 3-5 days | **Status**: 🟡
+**Added**: 2025-12-05
+
+> **Context**: Enable IRIS to use tools in native client without waiting for CITADEL API
+> **Implementation**: Ollama function calling for compatible models (qwen2.5, llama3.1, mistral)
+
+### Feature 7b.1: Local Tool Framework (1-2 days) 🟡
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_7b_1_1 | Implement Ollama tool calling wrapper | 2.5 | 1d | 🟡 |
+| task_7b_1_2 | Add tool registration and execution framework | 2.0 | 0.5d | 🔴 |
+| task_7b_1_3 | Integrate tool results into conversation flow | 2.2 | 0.5d | 🔴 |
+
+### Feature 7b.2: Basic Local Tools (2-3 days) 🔴
+| ID | Task | Complexity | Est. | Status |
+|----|------|------------|------|--------|
+| task_7b_2_1 | Time/date tool (current time, timezone support) | 1.5 | 0.5d | 🔴 |
+| task_7b_2_2 | Calculator tool (basic math operations) | 1.5 | 0.5d | 🔴 |
+| task_7b_2_3 | Timer/reminder tool (local notifications) | 2.0 | 1d | 🔴 |
+| task_7b_2_4 | Web search tool (DuckDuckGo API) | 2.3 | 1d | 🔴 |
+
+> **Note**: These tools work offline/locally without external API dependencies (except web search)
+> **Goal**: Give IRIS useful capabilities while CITADEL API develops
+
+---
+
 ## Epic 8: CITADEL Integration - Voice Access to Fleet Data
 
 **Estimated**: 37-40 days (2-3 weeks parallel) | **Status**: 🔴
@@ -401,11 +429,13 @@
 | Web Application | 5 | 13 | 20 | 🟡 | Core done, Auth/Dashboard pending |
 | Deployment | 4 | 10 | 14 | 🟡 | Docker done, VPS pending |
 | Testing | 3 | 9 | 15 | 🔴 | Latency benchmarks only |
+| **Native Client Tools** | **2** | **7** | **3-5** | 🟡 | NEW - Local tools for native client |
 | **CITADEL Integration** | **11** | **35** | **37-40** | 🔴 | Post-MVP |
 
-> **Last Updated**: 2025-12-03
+> **Last Updated**: 2025-12-05
 > **MVP Scope Cuts**: prepareTransaction, WebSocket subscriptions deferred. CITADEL is post-MVP.
 > **Voice latency**: Achieved ~700ms to first audio (target was <500ms)
+> **New**: Local tools integration in progress (time/date, calculator, web search)
 
 ---
 
