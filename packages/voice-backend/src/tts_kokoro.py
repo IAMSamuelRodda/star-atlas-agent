@@ -20,6 +20,11 @@ from typing import Literal
 import numpy as np
 from scipy.io import wavfile
 
+try:
+    from .text_processing import preprocess_for_tts
+except ImportError:
+    from text_processing import preprocess_for_tts
+
 logger = logging.getLogger(__name__)
 
 # Default voice for IRIS - af_heart is the most adaptive A-grade voice
@@ -151,6 +156,9 @@ class KokoroTTS:
                 duration_seconds=0.1,
             )
 
+        # Preprocess text for TTS (Roman numerals → words, etc.)
+        text = preprocess_for_tts(text)
+
         voice_id = voice or self.current_voice
         logger.debug(f"Synthesizing with {voice_id}: {text[:50]}...")
 
@@ -209,6 +217,7 @@ class KokoroTTS:
         Yields:
             Audio chunks as bytes (raw PCM int16).
         """
+        # Note: preprocess_for_tts is called inside synthesize()
         result = self.synthesize(text, voice=voice)
 
         # Convert to int16 for streaming
