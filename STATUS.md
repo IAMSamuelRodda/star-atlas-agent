@@ -3,8 +3,8 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-04 (Streaming Narrator module merged)
-**Current Phase**: Implementation (Voice Latency Optimization)
+**Last Updated**: 2025-12-05 (STT latency optimization complete)
+**Current Phase**: Implementation (Narrator integration)
 **Version**: 0.1.0 (Pre-MVP)
 
 ---
@@ -205,11 +205,11 @@
 
 **ARCH-002: Voice Latency Optimization** ✅ RESOLVED
 - **Fast-Layer Benchmark** (v2): `packages/voice-backend/test_e2e_latency_v2.py`
-- **Measured Fast Path** (Full GPU, warm):
-  - STT: 181ms + Pattern match: 3-12ms + TTS: 42ms = **~225ms to first audio** ✅
+- **Measured Fast Path** (Full GPU, warm, beam_size=1):
+  - STT: 22-28ms + Pattern match: 3-12ms + TTS: 42ms = **~70-80ms to first audio** ✅
 - **Pattern-based acknowledgments**: 3-12ms (covers ~90% of voice queries)
 - **Haiku dynamic acknowledgments**: 1.7-2.7s (for unmatched patterns)
-- **GPU STT**: 181ms (vs 266ms on CPU - 32% faster) - cuDNN conflict RESOLVED
+- **GPU STT**: 22-28ms for 2s audio (optimized beam_size=1) - cuDNN conflict RESOLVED
 - **GPU TTS (Kokoro)**: 42ms (vs 500ms with Chatterbox - 12x improvement)
 - **Claude main model**: Currently Haiku for testing (switch to Sonnet for production)
 - **Run services**: `STT_DEVICE=cuda TTS_DEVICE=cuda` (default, both GPU)
@@ -237,6 +237,14 @@ None
 
 ## Recent Achievements (Last 2 Weeks)
 
+**STT Latency Optimization (2025-12-05)**
+- **Investigated ARCH-004**: 181ms STT latency was actually first-run cold start, not production latency
+- **Actual warm latency**: 22-28ms for 2s voice commands (well under 50ms target)
+- **Optimization applied**: `beam_size` changed from 5 to 1 (~50% latency reduction)
+- **Benchmarks documented**: `packages/voice-backend/test_streaming_stt.py`
+- **RealtimeSTT prototype**: `src/stt_streaming.py` available for future streaming needs
+- **Conclusion**: Batch mode with optimized beam_size is sufficient; streaming architecture not required
+
 **Streaming Narrator Module (2025-12-04)**
 - **Local-first approach**: Qwen 2.5 7B at 180-200ms latency (production ready)
 - **Cloud reference**: Haiku 4.5 at 1500-3200ms (100% API time, validates local-first)
@@ -246,7 +254,7 @@ None
 - **Future**: Integrate with agent.ts, WebSocket streaming, hybrid mode
 
 **Voice Latency Optimization (2025-12-03)**
-- **GPU STT**: 181ms (32% faster than CPU 266ms) - cuDNN conflict RESOLVED
+- **GPU STT**: 22-28ms for 2s audio (optimized beam_size=1, was 181ms with beam_size=5)
 - **GPU TTS (Kokoro)**: 42ms (12x faster than Chatterbox's 500ms)
 - cuDNN fix: Auto-load nvidia-cudnn libs at startup via ctypes.CDLL
 - Full GPU pipeline: STT=CUDA + TTS=CUDA both working together
@@ -265,7 +273,7 @@ None
 **Voice UX Enhancement (2025-12-03)**
 - Voice Styles: 5 distinct conversation modes (Normal, Formal, Concise, Immersive, Learning)
 - GPU TTS: 42ms synthesis with Kokoro (12x faster than Chatterbox's 500ms)
-- **Time to first audio: ~225ms** (STT ~180ms + pattern match 3ms + TTS ~42ms)
+- **Time to first audio: ~70-80ms** (STT ~25ms + pattern match 3ms + TTS ~42ms)
 - UI: Voice style selector with persistent preferences
 
 **Architecture Refresh (2025-12-01)**

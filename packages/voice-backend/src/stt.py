@@ -36,9 +36,13 @@ class SpeechToText:
     Speech-to-text transcription using faster-whisper.
 
     Optimized for:
-    - Low latency (<200ms for short utterances)
+    - Low latency (~22ms for 2s voice commands with beam_size=1)
     - Low memory (int8 quantization)
     - Voice-first interaction patterns
+
+    Performance (RTX 4090, base model, int8):
+        2s audio: 22-28ms (beam=1), 43ms (beam=5)
+        6s audio: 55-58ms (beam=1), 87ms (beam=5)
 
     Usage:
         stt = SpeechToText(model_size="base")
@@ -82,7 +86,7 @@ class SpeechToText:
         self,
         audio: np.ndarray | bytes | str | Path,
         language: str | None = None,
-        beam_size: int = 5,
+        beam_size: int = 1,  # Optimized for low latency (was 5)
         vad_filter: bool = True,
     ) -> TranscriptionResult:
         """
@@ -91,7 +95,7 @@ class SpeechToText:
         Args:
             audio: Audio data as numpy array (float32, 16kHz), bytes, or file path.
             language: Optional language code (e.g., "en"). Auto-detected if None.
-            beam_size: Beam size for decoding. Lower = faster, higher = more accurate.
+            beam_size: Beam size for decoding. 1=fastest (~22ms), 5=accurate (~43ms).
             vad_filter: Enable Voice Activity Detection to skip silence.
 
         Returns:

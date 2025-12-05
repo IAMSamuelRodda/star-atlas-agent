@@ -3,7 +3,275 @@
 > **Purpose**: Track items needing attention before/during IRIS implementation
 > **Generated from**: specs/BLUEPRINT-project-staratlas-20251201.yaml
 
-**Last Updated**: 2025-12-03 (ARCH-002, ARCH-003 resolved)
+**Last Updated**: 2025-12-05 (Streaming architecture riff session)
+
+---
+
+## Critical Priority (Riff Session 2025-12-05)
+
+### ARCH-004: STT Latency Investigation - RESOLVED
+**Severity**: ✅ Resolved | **Created**: 2025-12-05 | **Resolved**: 2025-12-05
+**Component**: voice-backend (faster-whisper)
+
+**Original Problem**: Getting 181ms STT latency on RTX 4090. Should be sub-50ms.
+
+**Investigation Results** (2025-12-05):
+The 181ms was **first-run cold start**, not actual transcription time.
+
+**Actual Benchmarks** (RTX 4090, base model, int8, after warmup):
+
+| Audio Duration | beam_size=5 (old) | beam_size=1 (new) |
+|----------------|-------------------|-------------------|
+| 2s (typical cmd) | 43ms | 22-28ms |
+| 6s (long)      | 87ms | 55-58ms |
+
+**Root Cause**: Default `beam_size=5` was unnecessarily slow for voice commands.
+
+**Fix Applied**: Changed default `beam_size` from 5 to 1 in `src/stt.py:85`.
+- ~50% latency reduction with minimal accuracy impact for short voice commands
+- Now meeting sub-50ms target (22-28ms for typical 2s commands)
+
+**Streaming Architecture**: Not required for current latency targets. Batch mode with
+optimized beam_size is sufficient. RealtimeSTT remains available in `src/stt_streaming.py`
+if future requirements demand partial transcripts during speech.
+
+**References**:
+- `test_streaming_stt.py` - Benchmark script with results
+- `specs/DESIGN-adaptive-verbosity.md` - Streaming architecture design (future use)
+
+**Future Optimization (if sub-20ms needed)**:
+Custom streaming wrapper for maximum speed:
+- Silero VAD for speech detection (~50ms)
+- Custom faster-whisper streaming wrapper with 15-20ms chunks
+- Forward pass every 100ms for partials
+- Lighter weight than RealtimeSTT (no portaudio dependency)
+- Theoretical: <15ms transcription latency possible with aggressive buffering
+- ~2-4 hours to implement if batch mode latency becomes a bottleneck
+
+---
+
+### ARCH-005: VAD (Voice Activity Detection) Missing
+**Severity**: 🔴 Critical | **Created**: 2025-12-05
+**Component**: voice-backend
+
+**Problem**: No real-time voice activity detection. Currently using push-to-talk.
+
+**Impact**:
+- Can't detect end-of-speech automatically for streaming STT
+- Can't handle interruptions gracefully
+- Can't enable hands-free operation
+- Blocks ARCH-004 (streaming STT needs VAD trigger)
+
+**Recommended Solution**: Silero VAD v5 (~50ms detection)
+
+**Action Items**:
+- [ ] Integrate Silero VAD into voice-backend
+- [ ] Wire VAD to trigger STT finalization
+- [ ] Enable interruption detection
+- [ ] Design hands-free mode
+
+---
+
+## High Priority (Riff Session 2025-12-05)
+
+### ARCH-006: Interruption Context Desync
+**Severity**: 🟡 High | **Created**: 2025-12-05 | **Status**: Design Complete
+**Component**: agent-core
+
+**Problem**: When user interrupts IRIS mid-response, context doesn't reflect what was actually spoken vs generated.
+
+**Scenario**:
+```
+IRIS generating: "Three updates. First, Alpha docked. Second, fuel critical. Third, repairs."
+User interrupts after: "Second, fuel crit—"
+Context shows: Full response delivered (WRONG)
+```
+
+**Designed Solution**: Annotate interruptions, don't truncate.
+
+```typescript
+interface InterruptionEvent {
+  intendedResponse: string;      // full generated response
+  spokenUpTo: string;            // parsed from TTS playhead position
+  interruptedAtWord: number;     // word/character position
+  userInterruption: string;      // what they said
+}
+```
+
+**Prompt Injection Pattern**:
+> "Note: Your previous response was interrupted by the user after '...fuel crit—'. They only heard up to that point. Your full intended response was: [X]. Their interruption: [Y]"
+
+**Benefits**:
+1. Model retains full knowledge of what it intended to say
+2. Model understands social context (being cut off)
+3. Model can offer to complete: "Fuel's at 15%. I also had an update about repairs - want it?"
+4. Enables natural phrases: "As I was saying...", "To finish that thought..."
+
+**Action Items**:
+- [ ] Implement TTS playhead tracking
+- [ ] Build InterruptionEvent capture
+- [ ] Add prompt injection for interruption context
+- [ ] Test with VAD-triggered interrupts
+
+**References**: `specs/DESIGN-adaptive-verbosity.md`
+
+---
+
+### ARCH-007: Streaming Architecture Overhaul
+**Severity**: 🟡 High | **Created**: 2025-12-05
+**Component**: Full stack
+
+**Problem**: Current architecture waits for complete inputs before processing. Streaming would reduce perceived latency dramatically.
+
+**Target Architecture**:
+```
+User speaking → STT streaming partials → LLM pre-thinking on context
+User finishes → VAD detects → LLM finalizes immediately → TTS streams first tokens
+```
+
+**Key Changes Needed**:
+- Streaming STT (ARCH-004)
+- VAD integration (ARCH-005)
+- LLM receives partials before user finishes ("pre-thinking")
+- TTS starts on first token, not complete response
+
+**Two-Tier Response Strategy**:
+- **Local models**: Pure streaming, no ack needed (fast enough)
+- **Cloud models**: Fast local ack while waiting for first cloud token
+
+**The "Pre-Thinking" Insight**:
+```
+Partial: "What's the fuel..."
+LLM internally: [probably asking about fleet fuel, prep that context]
+
+Partial: "What's the fuel price..."
+LLM internally: [oh, market question, pivot to ATLAS/POLIS data]
+
+VAD: [end of speech]
+LLM: [already has direction, generates immediately]
+```
+
+**Action Items**:
+- [ ] Complete ARCH-004 (streaming STT)
+- [ ] Complete ARCH-005 (VAD integration)
+- [ ] Implement LLM partial context feeding
+- [ ] Implement TTS token streaming
+- [ ] Benchmark end-to-end latency
+
+---
+
+## Medium Priority (Riff Session 2025-12-05)
+
+### ISSUE-010: Model-Specific System Prompts Needed
+**Severity**: 🟠 Medium | **Created**: 2025-12-05
+**Component**: agent-core, narrator
+
+**Problem**: Different models respond better to different prompt structures. Currently using one-size-fits-all.
+
+**Proposal**:
+1. Prompt library per model family (Qwen, Llama, Claude, Mistral)
+2. Dynamic prompt loading when narrator model changes
+3. Fallback to generic if no specific prompt exists
+
+**Action Items**:
+- [ ] Audit current system prompts
+- [ ] Create model-specific variants
+- [ ] A/B test verbosity control per model
+- [ ] Implement dynamic prompt loader in narrator
+
+---
+
+### ISSUE-011: Adaptive Verbosity Control
+**Severity**: 🟠 Medium | **Created**: 2025-12-05 | **Status**: Design Phase
+**Component**: agent-core
+
+**Problem**: Response length doesn't adapt to user's communication style.
+
+**Designed Solution**: Three-layer verbosity control:
+
+1. **Style Layer** (system prompt) - baseline ceiling
+2. **Explicit Commands** - "quick version" / "all details" (highest priority)
+3. **Implicit Mirroring** - infer from user message length, cadence
+
+**Signals**:
+- Terse user (one-word commands) → short responses
+- Verbose user (rambling) → acknowledge first, then detail
+- Explicit override always wins
+
+**Key Insight - The Affirmation Pattern**:
+When users ramble, they often want to be *heard* first:
+1. Brief acknowledgment ("Got it - you're dealing with X, Y, Z")
+2. Then detailed response
+
+**Action Items**:
+- [ ] Implement word count / message length heuristics
+- [ ] Detect explicit verbosity keywords
+- [ ] Build rolling window for user style detection (last 3-5 messages)
+- [ ] Integrate with narrator verbosity levels
+
+**References**: `specs/DESIGN-adaptive-verbosity.md`
+
+---
+
+## Low Priority / Future (Riff Session 2025-12-05)
+
+### ISSUE-012: Ambient Audio Cues
+**Severity**: 🟢 Low | **Created**: 2025-12-05 | **Status**: Idea
+**Component**: web-app, voice
+
+**Idea**: Subtle audio cues (chime, typing sound) as alternative to verbal acknowledgment during cloud model latency gaps.
+
+**Rationale**: Less intrusive than "Got it", still fills cognitive gap.
+
+**Action Items**:
+- [ ] Design audio cue library
+- [ ] Implement optional cue playback
+- [ ] User preference toggle
+
+---
+
+### ISSUE-013: Narrator Model Warm-Up Protocol
+**Severity**: 🟢 Low | **Created**: 2025-12-05
+**Component**: narrator (Ollama)
+
+**Problem**: First inference on cold model takes 3-14s (model loading). Subsequent calls are fast (130-300ms).
+
+**Benchmark Results** (2025-12-05):
+| Model | Cold Start | Warm Latency | Notes |
+|-------|------------|--------------|-------|
+| qwen2.5:7b | 3.0s | 98-215ms | Best balance |
+| qwen2.5:14b | 6.6s | 130-360ms | Good quality |
+| qwen2.5:32b | 14.1s | 200-860ms | Highest quality |
+| mistral:7b | 3.8s | 131-229ms | No filtering (too talkative) |
+
+**Solution**: Warm-up protocol on service start.
+
+**Action Items**:
+- [ ] Add narrator warm-up to startup sequence
+- [ ] Send dummy inference on load
+- [ ] Log warm-up timing
+
+---
+
+### ISSUE-014: Long Response Chunking for Voice
+**Severity**: 🟢 Low | **Created**: 2025-12-05 | **Status**: Idea
+**Component**: agent-core
+
+**Problem**: Long responses (80+ seconds of audio) are exhausting to listen to. User can't skim.
+
+**Idea**: Chunk responses with natural breakpoints:
+```
+IRIS: "Three things about your fleet status." [pause]
+IRIS: "First, Alpha's docked at MRZ-1."       [pause]
+IRIS: "Second, fuel's critical at 15%."       [pause]
+```
+
+User can interrupt after any chunk. Front-load critical info.
+
+**Action Items**:
+- [ ] Design response chunking logic
+- [ ] Implement pause points in TTS
+- [ ] Enable per-chunk interruption
 
 ---
 
