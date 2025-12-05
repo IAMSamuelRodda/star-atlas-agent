@@ -3,7 +3,7 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-05 (PROGRESS.md realignment, tool integration research)
+**Last Updated**: 2025-12-05 (Future architecture planning - delegation, memory, A2A)
 **Current Phase**: Implementation (Native client development)
 **Version**: 0.1.0 (Pre-MVP)
 **Focus**: Native Primary, Web Secondary
@@ -243,6 +243,19 @@ None
 ---
 
 ## Recent Achievements (Last 2 Weeks)
+
+**Future Architecture Planning (2025-12-05)**
+- **Subagent Delegation** (ARCH-008, Epic 9):
+  - Documented Ollama 2-model limit and vLLM/SGLang migration triggers
+  - Added A2A protocol (Google) and Claude Code pattern research items
+  - UX patterns for delegation feedback ("Let me look into that...")
+- **Context Window Optimization** (ARCH-009, Epic 10):
+  - Strategies: summarization, sliding window, tool compression
+  - Context budget monitoring patterns
+- **Native Memory Integration** (ARCH-010, Epic 11):
+  - Documented gap: memory-service is TypeScript, native client is Python
+  - Plan: Python port with shared SQLite schema
+  - Dependency chain: Tools → Memory → Delegation → Context
 
 **PROGRESS.md Realignment & Tool Research (2025-12-05)**
 - **Focus pivot**: Native Primary, Web Secondary
