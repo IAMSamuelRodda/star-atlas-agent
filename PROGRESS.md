@@ -91,11 +91,12 @@
 | task_0_7_4 | Time/date tool (current time, timezone support) | 1.5 | 0.5d | 🟢 |
 | task_0_7_5 | Calculator tool (basic math operations) | 1.5 | 0.5d | 🟢 |
 | task_0_7_6 | Timer/reminder tool (local notifications) | 2.0 | 1d | 🔴 |
-| task_0_7_7 | Web search tool (DuckDuckGo API) | 2.3 | 1d | 🔴 |
+| task_0_7_7 | Web search tool (Brave Search API) | 2.3 | 1d | 🟢 |
 
 > **Note**: Local tools work offline without external API dependencies (except web search)
 > **Ollama models with tool support**: qwen2.5, llama3.1, mistral
 > **Implemented (a103d6e)**: Tool framework in `src/tools.py`, integration in `iris_local.py`
+> **Web search (ce5ee2a)**: Brave Search API, requires `BRAVE_API_KEY` env var
 
 ---
 
@@ -508,7 +509,7 @@
 > **Focus**: Native Primary, Web Secondary
 > **Native MVP**: DearPyGui desktop app with local Ollama + faster-whisper + Kokoro
 > **Voice latency**: ~700ms round-trip (target <500ms)
-> **Current Work**: Tool integration core complete (5/7 tasks); remaining: timer, web search
+> **Current Work**: Tool integration 6/7 complete; remaining: timer/reminder tool
 
 ---
 
