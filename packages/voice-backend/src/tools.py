@@ -12,9 +12,12 @@ Usage:
     result = execute_tool(tool_name, arguments)
 """
 
+import json
 import logging
 import os
-from datetime import datetime
+import threading
+import time
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -47,6 +50,164 @@ def _load_secrets() -> dict[str, str]:
 # Load secrets from config file, fall back to environment variables
 _secrets = _load_secrets()
 BRAVE_API_KEY = _secrets.get("BRAVE_API_KEY") or os.environ.get("BRAVE_API_KEY", "")
+
+
+# ==============================================================================
+# Rate Limiter (1 request per second, queue excess requests)
+# ==============================================================================
+
+
+class RateLimiter:
+    """Thread-safe rate limiter that queues requests to enforce rate limits."""
+
+    def __init__(self, min_interval: float = 1.0):
+        """
+        Args:
+            min_interval: Minimum seconds between requests (default: 1.0)
+        """
+        self.min_interval = min_interval
+        self._last_request_time = 0.0
+        self._lock = threading.Lock()
+
+    def wait(self) -> float:
+        """
+        Wait until we can make a request. Returns actual wait time in seconds.
+        Thread-safe: multiple agents calling this will be queued properly.
+        """
+        with self._lock:
+            now = time.time()
+            elapsed = now - self._last_request_time
+            wait_time = max(0.0, self.min_interval - elapsed)
+
+            if wait_time > 0:
+                logger.info(f"[RateLimiter] Waiting {wait_time:.2f}s before request")
+                time.sleep(wait_time)
+
+            self._last_request_time = time.time()
+            return wait_time
+
+
+# Global rate limiter for web search (1 request per second)
+_web_search_limiter = RateLimiter(min_interval=1.0)
+
+
+# ==============================================================================
+# Quota Tracker (threshold alerts at 20%, 5%, 0%)
+# ==============================================================================
+
+QUOTA_FILE = Path.home() / ".config" / "iris" / "quota.json"
+MONTHLY_QUOTA = 2000  # Free tier limit
+ALERT_THRESHOLDS = [0.20, 0.05, 0.0]  # Alert at 20%, 5%, 0% remaining
+
+
+def _load_quota() -> dict:
+    """Load quota tracking data from file."""
+    if QUOTA_FILE.exists():
+        try:
+            with open(QUOTA_FILE) as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning(f"[Quota] Failed to load quota file: {e}")
+    return {}
+
+
+def _save_quota(data: dict) -> None:
+    """Save quota tracking data to file."""
+    try:
+        QUOTA_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(QUOTA_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        logger.warning(f"[Quota] Failed to save quota file: {e}")
+
+
+def _update_quota_from_headers(headers: dict) -> str | None:
+    """
+    Parse rate limit headers and update quota tracking.
+    Returns alert message if threshold crossed, None otherwise.
+
+    Headers from Brave API (comma-separated: per-second, monthly):
+    - x-ratelimit-remaining: "0, 1997" (per-second remaining, monthly remaining)
+    - x-ratelimit-reset: "1, 2254307" (per-second reset, monthly reset)
+    - x-ratelimit-policy: "1;w=1, 2000;w=2678400" (1/sec, 2000/31-days)
+    """
+    remaining_header = headers.get("x-ratelimit-remaining")
+    reset_header = headers.get("x-ratelimit-reset")
+    policy_header = headers.get("x-ratelimit-policy", "")
+
+    if remaining_header is None:
+        return None
+
+    try:
+        # Parse comma-separated values (per-second, monthly)
+        remaining_parts = [x.strip() for x in remaining_header.split(",")]
+        remaining = int(remaining_parts[1]) if len(remaining_parts) > 1 else int(remaining_parts[0])
+
+        reset_parts = [x.strip() for x in reset_header.split(",")] if reset_header else []
+        reset_time = reset_parts[1] if len(reset_parts) > 1 else (reset_parts[0] if reset_parts else None)
+    except (ValueError, IndexError):
+        return None
+
+    # Parse policy to get monthly limit (second value)
+    monthly_limit = MONTHLY_QUOTA
+    if policy_header:
+        try:
+            policy_parts = [x.strip() for x in policy_header.split(",")]
+            if len(policy_parts) > 1:
+                # Second part: "2000;w=2678400"
+                monthly_limit = int(policy_parts[1].split(";")[0])
+            elif ";" in policy_parts[0]:
+                monthly_limit = int(policy_parts[0].split(";")[0])
+        except (ValueError, IndexError):
+            pass
+
+    # Calculate percentage remaining
+    percent_remaining = remaining / monthly_limit if monthly_limit > 0 else 0
+
+    # Load current quota data
+    quota_data = _load_quota()
+    last_alerted = quota_data.get("last_alerted_threshold", 1.0)
+
+    # Convert reset_time from seconds to human-readable date
+    reset_date = None
+    if reset_time:
+        try:
+            reset_seconds = int(reset_time)
+            reset_datetime = datetime.now() + timedelta(seconds=reset_seconds)
+            reset_date = reset_datetime.strftime("%Y-%m-%d")
+        except ValueError:
+            reset_date = reset_time
+
+    # Update quota data
+    quota_data["remaining"] = remaining
+    quota_data["monthly_limit"] = monthly_limit
+    quota_data["percent_remaining"] = round(percent_remaining, 4)
+    quota_data["reset_seconds"] = reset_time
+    quota_data["reset_date"] = reset_date
+    quota_data["last_updated"] = datetime.now().isoformat()
+
+    # Check for threshold alerts (only alert once per threshold)
+    alert_msg = None
+    for threshold in ALERT_THRESHOLDS:
+        if percent_remaining <= threshold < last_alerted:
+            quota_data["last_alerted_threshold"] = threshold
+            if threshold == 0.0:
+                alert_msg = f"\n\n⚠️ QUOTA EXHAUSTED: 0 web searches remaining. Resets on {reset_date}."
+            else:
+                pct = int(threshold * 100)
+                alert_msg = f"\n\n⚠️ QUOTA WARNING: Only {remaining} web searches remaining ({pct}% of monthly limit)."
+            break
+
+    _save_quota(quota_data)
+
+    logger.info(f"[Quota] {remaining}/{monthly_limit} searches remaining ({percent_remaining:.1%})")
+
+    return alert_msg
+
+
+def get_quota_status() -> dict:
+    """Get current quota status. Useful for status displays."""
+    return _load_quota()
 
 
 # ==============================================================================
@@ -200,10 +361,21 @@ def _web_search(query: str, count: int = 3) -> str:
             "3. Restart IRIS"
         )
 
+    # Check if quota is exhausted before making request
+    quota = _load_quota()
+    if quota.get("remaining", MONTHLY_QUOTA) <= 0:
+        reset_date = quota.get("reset_date", "unknown")
+        return f"Web search quota exhausted (0/{MONTHLY_QUOTA}). Resets on {reset_date}."
+
     # Clamp count to 1-5
     count = max(1, min(5, count))
 
     try:
+        # Rate limit: wait if needed (enforces 1 req/sec across all agents)
+        wait_time = _web_search_limiter.wait()
+        if wait_time > 0:
+            logger.info(f"[Tools] Rate limited, waited {wait_time:.2f}s")
+
         logger.info(f"[Tools] Web search: '{query}' (count={count})")
 
         response = requests.get(
@@ -220,10 +392,13 @@ def _web_search(query: str, count: int = 3) -> str:
             timeout=10,
         )
 
+        # Update quota tracking from response headers
+        alert_msg = _update_quota_from_headers(response.headers)
+
         if response.status_code == 401:
             return "Web search API key is invalid. Please check your BRAVE_API_KEY."
         elif response.status_code == 429:
-            return "Web search rate limit reached. Please try again later."
+            return "Web search rate limit reached. Please try again in a second."
         elif response.status_code != 200:
             logger.error(f"[Tools] Brave API error: {response.status_code} {response.text}")
             return f"Web search failed (HTTP {response.status_code})"
@@ -232,7 +407,8 @@ def _web_search(query: str, count: int = 3) -> str:
         web_results = data.get("web", {}).get("results", [])
 
         if not web_results:
-            return f"No results found for '{query}'"
+            result = f"No results found for '{query}'"
+            return result + (alert_msg or "")
 
         # Format results for LLM consumption
         results = []
@@ -242,7 +418,13 @@ def _web_search(query: str, count: int = 3) -> str:
             url = result.get("url", "")
             results.append(f"{i}. {title}\n   {description}\n   URL: {url}")
 
-        return f"Search results for '{query}':\n\n" + "\n\n".join(results)
+        result = f"Search results for '{query}':\n\n" + "\n\n".join(results)
+
+        # Append quota alert if threshold crossed
+        if alert_msg:
+            result += alert_msg
+
+        return result
 
     except requests.Timeout:
         return "Web search timed out. Please try again."
@@ -319,6 +501,26 @@ if __name__ == "__main__":
     else:
         print(f"  API key: NOT configured (set BRAVE_API_KEY to test)")
         print(f"  Without key: {execute_tool('web_search', {'query': 'test'})}")
+
+    print(f"\nQuota status:")
+    quota = get_quota_status()
+    if quota:
+        print(f"  Remaining: {quota.get('remaining', 'unknown')}/{quota.get('monthly_limit', MONTHLY_QUOTA)}")
+        print(f"  Percent: {quota.get('percent_remaining', 0):.1%}")
+        print(f"  Last updated: {quota.get('last_updated', 'never')}")
+    else:
+        print(f"  No quota data yet (run a web search to populate)")
+
+    print(f"\nRate limiter test (rapid fire 3 requests):")
+    if BRAVE_API_KEY:
+        import time as _time
+        start = _time.time()
+        for i in range(3):
+            print(f"  Request {i+1} at t={_time.time()-start:.2f}s...")
+            _web_search_limiter.wait()
+        print(f"  Total time: {_time.time()-start:.2f}s (expected ~2s for 3 requests)")
+    else:
+        print(f"  Skipped (no API key)")
 
     print(f"\nTool-capable models check:")
     for model in ["qwen2.5:7b", "llama3.1:8b", "mistral:7b", "phi3:mini"]:
