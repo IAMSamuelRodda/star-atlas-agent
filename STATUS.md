@@ -3,7 +3,7 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-05 (TTS text preprocessing, streaming LLM testing)
+**Last Updated**: 2025-12-05 (Streaming stress test, benchmark documentation)
 **Current Phase**: Implementation (Voice pipeline refinement)
 **Version**: 0.1.0 (Pre-MVP)
 
@@ -236,6 +236,26 @@ None
 ---
 
 ## Recent Achievements (Last 2 Weeks)
+
+**Streaming Stress Test & Benchmarks (2025-12-05)**
+- **New test harness**: `packages/voice-backend/test_streaming_stress.py`
+  - Extended LLM streaming (300-500 tokens)
+  - Sentence-based chunking for progressive TTS
+  - Audio playback with metrics collection
+- **New benchmark doc**: `packages/voice-backend/BENCHMARKS.md`
+  - Historical performance tracking across architectures
+  - Model comparison (qwen2.5:7b, llama3.1:8b, mistral:7b)
+  - Component warmup timings
+- **Dynamic warmup system**: `packages/voice-backend/src/warmup.py`
+  - Environment-based configuration (OLLAMA_MODEL, STT_DEVICE, etc.)
+  - Runtime model switching: `warmup.warmup_llm("mistral:7b")`
+  - Public methods: `warmup_all()`, `warmup_llm()`, `set_llm_model()`
+- **Model comparison results** (300 tokens, warm):
+  - qwen2.5:7b: 70-88ms first token, 122 tok/s, 180-434ms first audio
+  - llama3.1:8b: 80-96ms first token, 116 tok/s, 288-480ms first audio
+  - mistral:7b: 23ms first token, 127 tok/s, 138ms first audio (fastest)
+- **Architecture validated**: Streaming LLM → sentence buffer → chunked TTS → progressive playback
+- **Extended test**: 500 tokens = 29 TTS chunks, 156s audio, 4.3s total processing
 
 **TTS Text Preprocessing (2025-12-05)**
 - **New module**: `packages/voice-backend/src/text_processing.py`

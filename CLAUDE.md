@@ -27,6 +27,8 @@
 
 See `ARCHITECTURE.md` for system design and tech stack.
 
+**Voice benchmarks**: `packages/voice-backend/BENCHMARKS.md` → Always use `--save-results` when running performance tests to record outputs in JSONL format.
+
 ---
 
 ## 🔄 Workflow Quick Reference
@@ -63,4 +65,4 @@ git worktree remove ../iris--work
 
 ---
 
-**Last Updated**: 2025-12-03
+**Last Updated**: 2025-12-05

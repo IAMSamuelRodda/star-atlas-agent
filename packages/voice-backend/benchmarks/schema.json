@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Benchmark Result",
+  "description": "Schema for voice backend benchmark results",
+  "type": "object",
+  "required": ["id", "timestamp", "test_type", "architecture", "parameters", "results"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier (UUID)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of test run"
+    },
+    "test_type": {
+      "type": "string",
+      "enum": ["streaming", "warmup", "e2e", "component", "stress"],
+      "description": "Type of benchmark test"
+    },
+    "script": {
+      "type": "string",
+      "description": "Script file that generated this result"
+    },
+    "git_commit": {
+      "type": "string",
+      "description": "Git commit hash at time of test"
+    },
+    "architecture": {
+      "type": "object",
+      "description": "Components and configuration used",
+      "properties": {
+        "stt": {
+          "type": "object",
+          "properties": {
+            "engine": { "type": "string" },
+            "model": { "type": "string" },
+            "device": { "type": "string" },
+            "options": { "type": "object" }
+          }
+        },
+        "tts": {
+          "type": "object",
+          "properties": {
+            "engine": { "type": "string" },
+            "model": { "type": "string" },
+            "device": { "type": "string" },
+            "voice": { "type": "string" },
+            "options": { "type": "object" }
+          }
+        },
+        "llm": {
+          "type": "object",
+          "properties": {
+            "provider": { "type": "string" },
+            "model": { "type": "string" },
+            "endpoint": { "type": "string" },
+            "options": { "type": "object" }
+          }
+        },
+        "hardware": {
+          "type": "object",
+          "properties": {
+            "gpu": { "type": "string" },
+            "cpu": { "type": "string" },
+            "ram_gb": { "type": "number" }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Test parameters",
+      "properties": {
+        "model": { "type": "string" },
+        "max_tokens": { "type": "integer" },
+        "num_prompts": { "type": "integer" },
+        "prompt_type": { "type": "string" },
+        "warmup_enabled": { "type": "boolean" },
+        "audio_playback": { "type": "boolean" },
+        "iterations": { "type": "integer" }
+      }
+    },
+    "results": {
+      "type": "object",
+      "description": "Measured metrics",
+      "properties": {
+        "first_token_ms": { "type": "number" },
+        "first_audio_ms": { "type": "number" },
+        "total_time_ms": { "type": "number" },
+        "tokens_per_sec": { "type": "number" },
+        "total_tokens": { "type": "integer" },
+        "total_chars": { "type": "integer" },
+        "tts_chunks": { "type": "integer" },
+        "tts_time_ms": { "type": "number" },
+        "audio_duration_sec": { "type": "number" },
+        "stt_latency_ms": { "type": "number" },
+        "llm_latency_ms": { "type": "number" },
+        "cold_start_penalty_ms": { "type": "number" }
+      }
+    },
+    "per_run_results": {
+      "type": "array",
+      "description": "Individual run results for multi-prompt tests",
+      "items": {
+        "type": "object",
+        "properties": {
+          "prompt": { "type": "string" },
+          "first_token_ms": { "type": "number" },
+          "first_audio_ms": { "type": "number" },
+          "total_time_ms": { "type": "number" },
+          "tokens": { "type": "integer" },
+          "tts_chunks": { "type": "integer" }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or observations"
+    }
+  }
+}

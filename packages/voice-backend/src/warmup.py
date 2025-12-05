@@ -7,13 +7,44 @@ Ensures first user interaction has minimal latency by pre-warming:
 - LLM: Send warmup request to Ollama (if available)
 
 Usage:
-    from warmup import WarmupManager
+    from warmup import WarmupManager, get_warmup_manager
 
-    warmup = WarmupManager(stt_device="cuda", tts_device="cuda")
+    # Option 1: Use singleton with environment defaults
+    warmup = get_warmup_manager()
+    await warmup.warmup_all()
+
+    # Option 2: Create custom instance
+    warmup = WarmupManager(ollama_model="mistral:7b")
     await warmup.warmup_all()
 
     if warmup.is_ready:
         # Safe to handle user requests
+        pass
+
+    # Switch to different LLM model at runtime
+    await warmup.warmup_llm("llama3:8b")
+
+    # Or set model without immediate warmup
+    warmup.set_llm_model("phi3:mini")
+    # ... later ...
+    await warmup.warmup_llm()
+
+Environment Variables (all optional, with defaults):
+    OLLAMA_URL: Ollama API URL (default: http://localhost:11434)
+    OLLAMA_MODEL: Default LLM model (default: qwen2.5:7b)
+    STT_DEVICE: STT device - cpu, cuda, auto (default: cuda)
+    TTS_DEVICE: TTS device - cpu, cuda, auto (default: cuda)
+    STT_MODEL_SIZE: Whisper model size (default: base)
+
+Command Line Testing:
+    # Use default model from OLLAMA_MODEL env var
+    python test_warmup.py
+
+    # Specify model directly
+    python test_warmup.py --model mistral:7b
+
+    # Use CPU
+    python test_warmup.py --cpu --model phi3:mini
 """
 
 import asyncio
@@ -27,6 +58,13 @@ import numpy as np
 import requests
 
 logger = logging.getLogger(__name__)
+
+# Environment-based defaults (single source of truth)
+DEFAULT_OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+DEFAULT_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+DEFAULT_STT_DEVICE = os.getenv("STT_DEVICE", "cuda")
+DEFAULT_TTS_DEVICE = os.getenv("TTS_DEVICE", "cuda")
+DEFAULT_STT_MODEL_SIZE = os.getenv("STT_MODEL_SIZE", "base")
 
 
 @dataclass
@@ -52,17 +90,18 @@ class WarmupManager:
 
     def __init__(
         self,
-        stt_device: Literal["cpu", "cuda", "auto"] = "cuda",
-        tts_device: Literal["cpu", "cuda", "auto"] = "cuda",
-        stt_model_size: str = "base",
-        ollama_url: str = "http://localhost:11434",
-        ollama_model: str = "qwen2.5:7b",
+        stt_device: Literal["cpu", "cuda", "auto"] | None = None,
+        tts_device: Literal["cpu", "cuda", "auto"] | None = None,
+        stt_model_size: str | None = None,
+        ollama_url: str | None = None,
+        ollama_model: str | None = None,
     ):
-        self.stt_device = stt_device
-        self.tts_device = tts_device
-        self.stt_model_size = stt_model_size
-        self.ollama_url = ollama_url
-        self.ollama_model = ollama_model
+        # Use environment defaults if not specified
+        self.stt_device = stt_device or DEFAULT_STT_DEVICE
+        self.tts_device = tts_device or DEFAULT_TTS_DEVICE
+        self.stt_model_size = stt_model_size or DEFAULT_STT_MODEL_SIZE
+        self.ollama_url = ollama_url or DEFAULT_OLLAMA_URL
+        self.ollama_model = ollama_model or DEFAULT_OLLAMA_MODEL
         self.status = WarmupStatus()
         self._warmup_complete = asyncio.Event()
 
@@ -244,18 +283,61 @@ class WarmupManager:
             self.status.llm_ready = False
             self.status.llm_model = "error"
 
+    async def warmup_llm(self, model: str | None = None) -> bool:
+        """
+        Public method to warm up a specific LLM model.
+
+        Useful for switching models at runtime without full system warmup.
+
+        Args:
+            model: Ollama model name (e.g., 'qwen2.5:7b', 'mistral:7b').
+                   If None, uses the current configured model.
+
+        Returns:
+            True if warmup succeeded, False otherwise.
+        """
+        if model:
+            self.ollama_model = model
+
+        await self._warmup_llm()
+        return self.status.llm_ready
+
+    def set_llm_model(self, model: str):
+        """
+        Set the LLM model without warming up.
+
+        Call warmup_llm() after this to warm up the new model.
+
+        Args:
+            model: Ollama model name (e.g., 'qwen2.5:7b', 'mistral:7b')
+        """
+        self.ollama_model = model
+        self.status.llm_ready = False
+        self.status.llm_model = ""
+        self.status.llm_latency_ms = 0
+
 
 # Singleton instance
 _warmup_manager: WarmupManager | None = None
 
 
 def get_warmup_manager(
-    stt_device: Literal["cpu", "cuda", "auto"] = "cuda",
-    tts_device: Literal["cpu", "cuda", "auto"] = "cuda",
-    stt_model_size: str = "base",
-    ollama_model: str = "qwen2.5:7b",
+    stt_device: Literal["cpu", "cuda", "auto"] | None = None,
+    tts_device: Literal["cpu", "cuda", "auto"] | None = None,
+    stt_model_size: str | None = None,
+    ollama_model: str | None = None,
+    ollama_url: str | None = None,
 ) -> WarmupManager:
-    """Get or create the warmup manager singleton."""
+    """
+    Get or create the warmup manager singleton.
+
+    All parameters default to environment variables if not specified:
+    - STT_DEVICE (default: cuda)
+    - TTS_DEVICE (default: cuda)
+    - STT_MODEL_SIZE (default: base)
+    - OLLAMA_MODEL (default: qwen2.5:7b)
+    - OLLAMA_URL (default: http://localhost:11434)
+    """
     global _warmup_manager
     if _warmup_manager is None:
         _warmup_manager = WarmupManager(
@@ -263,5 +345,12 @@ def get_warmup_manager(
             tts_device=tts_device,
             stt_model_size=stt_model_size,
             ollama_model=ollama_model,
+            ollama_url=ollama_url,
         )
     return _warmup_manager
+
+
+def reset_warmup_manager():
+    """Reset the warmup manager singleton. Useful for testing."""
+    global _warmup_manager
+    _warmup_manager = None

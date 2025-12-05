@@ -4,7 +4,15 @@ Test warmup sequence for all voice pipeline components.
 
 Usage:
     python test_warmup.py
-    python test_warmup.py --cpu  # Use CPU instead of GPU
+    python test_warmup.py --cpu           # Use CPU instead of GPU
+    python test_warmup.py --model mistral:7b  # Use specific LLM model
+    python test_warmup.py --model llama3:8b --cpu  # Combine options
+
+Environment Variables:
+    OLLAMA_MODEL: Default LLM model (default: qwen2.5:7b)
+    OLLAMA_URL: Ollama API URL (default: http://localhost:11434)
+    STT_DEVICE: STT device (default: cuda)
+    TTS_DEVICE: TTS device (default: cuda)
 """
 
 import argparse
@@ -27,20 +35,23 @@ _setup_cudnn()
 
 sys.path.insert(0, 'src')
 
-from warmup import WarmupManager
+from warmup import WarmupManager, DEFAULT_OLLAMA_MODEL
 
 
-async def test_warmup(device: str = "cuda"):
+async def test_warmup(device: str = "cuda", model: str | None = None):
+    model = model or DEFAULT_OLLAMA_MODEL
+
     print("=" * 60)
     print("WARMUP TEST")
     print("=" * 60)
     print(f"Device: {device}")
+    print(f"LLM Model: {model}")
     print()
 
     warmup = WarmupManager(
         stt_device=device,
         tts_device=device,
-        ollama_model='qwen2.5:7b'
+        ollama_model=model,
     )
     status = await warmup.warmup_all()
 
@@ -63,13 +74,74 @@ async def test_warmup(device: str = "cuda"):
     return status
 
 
+async def test_model_switching(device: str = "cuda"):
+    """Test runtime model switching."""
+    print("\n" + "=" * 60)
+    print("MODEL SWITCHING TEST")
+    print("=" * 60)
+
+    warmup = WarmupManager(
+        stt_device=device,
+        tts_device=device,
+        ollama_model="qwen2.5:7b",
+    )
+
+    # Initial warmup
+    print("\n[1] Initial warmup with qwen2.5:7b...")
+    await warmup.warmup_all()
+    print(f"    LLM Ready: {warmup.status.llm_ready} [{warmup.status.llm_model}]")
+
+    # Switch to different model
+    print("\n[2] Switching to mistral:7b...")
+    success = await warmup.warmup_llm("mistral:7b")
+    print(f"    LLM Ready: {success} [{warmup.status.llm_model}]")
+
+    # Switch back
+    print("\n[3] Switching back to qwen2.5:7b...")
+    success = await warmup.warmup_llm("qwen2.5:7b")
+    print(f"    LLM Ready: {success} [{warmup.status.llm_model}]")
+
+    print("\n" + "=" * 60)
+    print("MODEL SWITCHING TEST COMPLETE")
+    print("=" * 60)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Test warmup sequence")
-    parser.add_argument("--cpu", action="store_true", help="Use CPU instead of GPU")
+    parser = argparse.ArgumentParser(
+        description="Test warmup sequence for voice pipeline",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+    python test_warmup.py                     # Default (cuda, qwen2.5:7b)
+    python test_warmup.py --model mistral:7b  # Different LLM model
+    python test_warmup.py --cpu               # CPU mode
+    python test_warmup.py --switch-test       # Test model switching
+        """
+    )
+    parser.add_argument(
+        "--cpu",
+        action="store_true",
+        help="Use CPU instead of GPU"
+    )
+    parser.add_argument(
+        "--model", "-m",
+        type=str,
+        default=None,
+        help=f"LLM model to use (default: {DEFAULT_OLLAMA_MODEL})"
+    )
+    parser.add_argument(
+        "--switch-test",
+        action="store_true",
+        help="Run model switching test instead of standard warmup"
+    )
     args = parser.parse_args()
 
     device = "cpu" if args.cpu else "cuda"
-    asyncio.run(test_warmup(device))
+
+    if args.switch_test:
+        asyncio.run(test_model_switching(device))
+    else:
+        asyncio.run(test_warmup(device, args.model))
 
 
 if __name__ == "__main__":
