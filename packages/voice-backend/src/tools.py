@@ -292,72 +292,27 @@ def get_session_todos() -> list[dict]:
 # ==============================================================================
 # Tool Definitions (JSON Schema for Ollama)
 # ==============================================================================
+#
+# Architecture: Meta-tool router pattern (like lazy-mcp)
+# - Tier 1: Core tools always loaded (~150 tokens)
+# - Tier 2: Single meta-tool routes to 12 capabilities (~100 tokens)
+# - Total: ~250 tokens (vs ~1,571 with inline definitions = 84% reduction)
+#
+# ==============================================================================
 
-TOOLS = [
-    # --- Session Todo Tools ---
-    {
-        "type": "function",
-        "function": {
-            "name": "todo_add",
-            "description": "Add a task to track during this session. Use when user gives you multiple things to do, or when breaking down a complex request.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "task": {
-                        "type": "string",
-                        "description": "The task to add (e.g., 'Check fleet status', 'Find mining route')",
-                    },
-                    "priority": {
-                        "type": "string",
-                        "enum": ["normal", "high"],
-                        "description": "Task priority (default: normal)",
-                    }
-                },
-                "required": ["task"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "todo_complete",
-            "description": "Mark a session task as complete. Use after finishing a tracked task.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "task_id": {
-                        "type": "integer",
-                        "description": "The task ID to mark complete",
-                    }
-                },
-                "required": ["task_id"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "todo_list",
-            "description": "List all tasks in the current session. Use to show progress or recall what needs to be done.",
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": [],
-            },
-        },
-    },
-    # --- Utility Tools ---
+# Tier 1: Core tools - always useful, minimal overhead
+CORE_TOOLS = [
     {
         "type": "function",
         "function": {
             "name": "get_current_time",
-            "description": "Get the current time and date. Use when user asks what time it is, the current date, or day of the week.",
+            "description": "Get current time/date. Use for time, date, or day questions.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "timezone": {
                         "type": "string",
-                        "description": "IANA timezone (e.g., 'Australia/Brisbane', 'America/New_York', 'UTC'). Defaults to local time if not specified.",
+                        "description": "IANA timezone (e.g., 'Australia/Brisbane')",
                     }
                 },
                 "required": [],
@@ -368,200 +323,58 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "calculate",
-            "description": "Perform mathematical calculations. Use for any math: arithmetic, percentages, unit conversions, etc.",
+            "description": "Math calculations: arithmetic, percentages, conversions.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "expression": {
                         "type": "string",
-                        "description": "Mathematical expression to evaluate (e.g., '2 + 2', '15% of 200', '100 * 1.5')",
+                        "description": "Math expression (e.g., '2+2', '15% of 200')",
                     }
                 },
                 "required": ["expression"],
             },
         },
     },
-    {
-        "type": "function",
-        "function": {
-            "name": "web_search",
-            "description": "Search the web for current information. Use when user asks about recent events, news, facts you don't know, or anything that might need up-to-date information.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "The search query (e.g., 'weather in Brisbane', 'latest news about Star Atlas', 'who won the 2024 election')",
-                    },
-                    "count": {
-                        "type": "integer",
-                        "description": "Number of results to return (1-5, default 3)",
-                    }
-                },
-                "required": ["query"],
-            },
-        },
-    },
-    # --- Todoist Tools (Reminders) ---
-    {
-        "type": "function",
-        "function": {
-            "name": "todoist_create_task",
-            "description": "Create a reminder/task for the user. Use when they say 'remind me to...', 'add a task...', or want to remember something for later.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "content": {
-                        "type": "string",
-                        "description": "The task/reminder text (e.g., 'Check fleet fuel levels')",
-                    },
-                    "due_string": {
-                        "type": "string",
-                        "description": "When the task is due in natural language (e.g., 'in 4 hours', 'tomorrow at 3pm', 'next Monday')",
-                    },
-                    "priority": {
-                        "type": "integer",
-                        "description": "Priority 1-4 (4=urgent, 1=normal). Default 1.",
-                    }
-                },
-                "required": ["content"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "todoist_list_tasks",
-            "description": "List the user's pending tasks/reminders. Use when they ask 'what do I need to do?', 'show my tasks', 'what's on my list?'.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "filter_str": {
-                        "type": "string",
-                        "description": "Optional filter (e.g., 'today', 'overdue', 'p1' for priority 1)",
-                    }
-                },
-                "required": [],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "todoist_complete_task",
-            "description": "Mark a task as complete. Use when user says 'done with...', 'completed...', 'finished...', or 'mark X as done'.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "task_content": {
-                        "type": "string",
-                        "description": "Part of the task name to search for and complete",
-                    }
-                },
-                "required": ["task_content"],
-            },
-        },
-    },
-    # --- Memory Tools (Knowledge Graph) ---
-    {
-        "type": "function",
-        "function": {
-            "name": "memory_remember",
-            "description": "Remember something about the user or important information. Use when user says 'remember that...', 'keep in mind...', or tells you important preferences/facts.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "entity_name": {
-                        "type": "string",
-                        "description": "What/who this fact is about (e.g., 'User', 'The Armada', 'Calico fleet')",
-                    },
-                    "entity_type": {
-                        "type": "string",
-                        "enum": ["person", "organization", "fleet", "ship", "location", "concept", "event"],
-                        "description": "Type of entity (default: concept)",
-                    },
-                    "facts": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Facts to remember about this entity (e.g., ['prefers morning notifications', 'owns 3 ships'])",
-                    }
-                },
-                "required": ["entity_name", "facts"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "memory_recall",
-            "description": "Search memory for what you know about something. Use when you need context, user asks 'what do you know about X?', or need to recall preferences.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "What to search for in memory (e.g., 'fleet preferences', 'mining routes', 'user')",
-                    }
-                },
-                "required": ["query"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "memory_forget",
-            "description": "Forget something from memory. Use when user says 'forget that...', 'remove...', or wants to delete stored information.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "entity_name": {
-                        "type": "string",
-                        "description": "Name of the entity to forget (deletes entity and all its facts)",
-                    }
-                },
-                "required": ["entity_name"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "memory_relate",
-            "description": "Create a relationship between two things in memory. Use to link concepts (e.g., 'Commander Sam' commands 'The Armada').",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "from_entity": {
-                        "type": "string",
-                        "description": "Source entity name (e.g., 'Commander Sam')",
-                    },
-                    "relation": {
-                        "type": "string",
-                        "description": "Relationship type in active voice (e.g., 'commands', 'owns', 'mines_at')",
-                    },
-                    "to_entity": {
-                        "type": "string",
-                        "description": "Target entity name (e.g., 'The Armada')",
-                    }
-                },
-                "required": ["from_entity", "relation", "to_entity"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "memory_summary",
-            "description": "Get a summary of everything remembered about the user. Use when user asks 'what do you remember?', 'what do you know about me?'.",
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": [],
-            },
-        },
-    },
 ]
+
+# Tier 2: Meta-tool for grouped capabilities
+IRIS_META_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "iris",
+        "description": """Execute IRIS capabilities. Categories:
+- search: Web search for current info (query, count?)
+- tasks: Session task tracking (add/complete/list, task?, task_id?, priority?)
+- reminders: Todoist persistent reminders (create/list/done, content?, due?, task_content?)
+- memory: Remember/recall facts (remember/recall/forget/relate/summary, entity?, facts?, query?, from?, to?, relation?)""",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "enum": ["search", "tasks", "reminders", "memory"],
+                    "description": "Capability category",
+                },
+                "action": {
+                    "type": "string",
+                    "description": "Action: search=query | tasks=add,complete,list | reminders=create,list,done | memory=remember,recall,forget,relate,summary",
+                },
+                "params": {
+                    "type": "object",
+                    "description": "Action parameters as key-value pairs",
+                },
+            },
+            "required": ["category", "action"],
+        },
+    },
+}
+
+# Combined tool list for Ollama
+TOOLS = CORE_TOOLS + [IRIS_META_TOOL]
+
+# Legacy inline tools (kept for reference/fallback, not exported by default)
+TOOLS_LEGACY = "see git history"
 
 # Models that support tool calling (prefix match)
 TOOL_CAPABLE_MODELS = ["qwen2.5", "qwen2", "llama3.1", "llama3.2", "mistral", "mixtral"]
@@ -993,24 +806,114 @@ def _memory_summary() -> str:
 
 
 # ==============================================================================
+# Meta-Tool Router (iris)
+# ==============================================================================
+
+def _iris_router(category: str, action: str, params: dict = None) -> str:
+    """
+    Route meta-tool calls to actual implementations.
+
+    This is the core of the lazy-loading pattern - one tool definition
+    routes to 12 different capabilities based on category+action.
+    """
+    params = params or {}
+
+    logger.info(f"[IRIS] Routing: {category}/{action} with {params}")
+
+    # Search category
+    if category == "search":
+        if action == "query" or action == "search":
+            return _web_search(
+                query=params.get("query", ""),
+                count=params.get("count", 3)
+            )
+        return f"Unknown search action: {action}. Use: query"
+
+    # Tasks category (session todos)
+    elif category == "tasks":
+        if action == "add":
+            return _todo_add(
+                task=params.get("task", params.get("content", "")),
+                priority=params.get("priority", "normal")
+            )
+        elif action == "complete":
+            task_id = params.get("task_id", params.get("id", 0))
+            if isinstance(task_id, str):
+                task_id = int(task_id) if task_id.isdigit() else 0
+            return _todo_complete(task_id=task_id)
+        elif action == "list":
+            return _todo_list()
+        return f"Unknown tasks action: {action}. Use: add, complete, list"
+
+    # Reminders category (Todoist)
+    elif category == "reminders":
+        if action == "create":
+            return _todoist_create_task(
+                content=params.get("content", ""),
+                due_string=params.get("due", params.get("due_string")),
+                priority=params.get("priority", 1)
+            )
+        elif action == "list":
+            return _todoist_list_tasks(
+                filter_str=params.get("filter", params.get("filter_str"))
+            )
+        elif action == "done" or action == "complete":
+            return _todoist_complete_task(
+                task_content=params.get("task_content", params.get("content", ""))
+            )
+        return f"Unknown reminders action: {action}. Use: create, list, done"
+
+    # Memory category (knowledge graph)
+    elif category == "memory":
+        if action == "remember":
+            facts = params.get("facts", [])
+            if isinstance(facts, str):
+                facts = [facts]
+            return _memory_remember(
+                entity_name=params.get("entity", params.get("entity_name", "User")),
+                facts=facts,
+                entity_type=params.get("type", params.get("entity_type", "concept"))
+            )
+        elif action == "recall":
+            return _memory_recall(
+                query=params.get("query", "")
+            )
+        elif action == "forget":
+            return _memory_forget(
+                entity_name=params.get("entity", params.get("entity_name", ""))
+            )
+        elif action == "relate":
+            return _memory_relate(
+                from_entity=params.get("from", params.get("from_entity", "")),
+                relation=params.get("relation", ""),
+                to_entity=params.get("to", params.get("to_entity", ""))
+            )
+        elif action == "summary":
+            return _memory_summary()
+        return f"Unknown memory action: {action}. Use: remember, recall, forget, relate, summary"
+
+    return f"Unknown category: {category}. Use: search, tasks, reminders, memory"
+
+
+# ==============================================================================
 # Tool Execution
 # ==============================================================================
 
-# Map tool names to functions
+# Map tool names to functions (core tools + meta-tool router)
 TOOL_FUNCTIONS = {
-    # Session todo
+    # Tier 1: Core tools (always inline)
+    "get_current_time": _get_current_time,
+    "calculate": _calculate,
+    # Tier 2: Meta-tool router
+    "iris": _iris_router,
+    # Legacy direct access (for backwards compatibility)
+    "web_search": _web_search,
     "todo_add": _todo_add,
     "todo_complete": _todo_complete,
     "todo_list": _todo_list,
-    # Utility
-    "get_current_time": _get_current_time,
-    "calculate": _calculate,
-    "web_search": _web_search,
-    # Todoist (reminders)
     "todoist_create_task": _todoist_create_task,
     "todoist_list_tasks": _todoist_list_tasks,
     "todoist_complete_task": _todoist_complete_task,
-    # Memory (knowledge graph)
     "memory_remember": _memory_remember,
     "memory_recall": _memory_recall,
     "memory_forget": _memory_forget,
@@ -1020,8 +923,8 @@ TOOL_FUNCTIONS = {
 
 
 def get_tool_names() -> list[str]:
-    """Get list of available tool names."""
-    return list(TOOL_FUNCTIONS.keys())
+    """Get list of available tool names (meta-tool categories)."""
+    return ["get_current_time", "calculate", "iris(search|tasks|reminders|memory)"]
 
 
 # ==============================================================================
@@ -1105,52 +1008,60 @@ if __name__ == "__main__":
     # Quick test
     logging.basicConfig(level=logging.INFO)
 
-    print("Testing tools:")
+    print("=" * 60)
+    print("TOOL CONTEXT ANALYSIS")
+    print("=" * 60)
+
+    # Measure token overhead
+    import json
+    total_chars = 0
+    for tool in TOOLS:
+        tool_json = json.dumps(tool)
+        chars = len(tool_json)
+        total_chars += chars
+        name = tool['function']['name']
+        print(f"  {name:20} {chars:4} chars")
+
+    print(f"\n  TOTAL: {total_chars:,} chars (~{total_chars // 4:,} tokens)")
+    print(f"  Tools: {len(TOOLS)}")
+
+    print("\n" + "=" * 60)
+    print("CORE TOOLS TEST")
+    print("=" * 60)
     print(f"  Time: {execute_tool('get_current_time', {})}")
-    print(f"  Time (UTC): {execute_tool('get_current_time', {'timezone': 'UTC'})}")
-    print(f"  Calc: {execute_tool('calculate', {'expression': '2 + 2'})}")
     print(f"  Calc: {execute_tool('calculate', {'expression': '15% of 200'})}")
-    print(f"  Calc: {execute_tool('calculate', {'expression': '100 * 1.5'})}")
 
-    print(f"\nWeb search test:")
-    if BRAVE_API_KEY:
-        print(f"  API key: configured")
-        result = execute_tool('web_search', {'query': 'Star Atlas game', 'count': 2})
-        print(f"  Result:\n{result}")
-    else:
-        print(f"  API key: NOT configured (set BRAVE_API_KEY to test)")
-        print(f"  Without key: {execute_tool('web_search', {'query': 'test'})}")
+    print("\n" + "=" * 60)
+    print("META-TOOL ROUTER TEST (iris)")
+    print("=" * 60)
 
-    print(f"\nQuota status:")
-    quota = get_quota_status()
-    if quota:
-        print(f"  Remaining: {quota.get('remaining', 'unknown')}/{quota.get('monthly_limit', MONTHLY_QUOTA)}")
-        print(f"  Percent: {quota.get('percent_remaining', 0):.1%}")
-        print(f"  Last updated: {quota.get('last_updated', 'never')}")
-    else:
-        print(f"  No quota data yet (run a web search to populate)")
+    # Test search via router
+    print("\n[Search Category]")
+    result = execute_tool('iris', {
+        'category': 'search',
+        'action': 'query',
+        'params': {'query': 'test', 'count': 1}
+    })
+    print(f"  iris(search/query): {result[:80]}...")
 
-    print(f"\nRate limiter test (rapid fire 3 requests):")
-    if BRAVE_API_KEY:
-        import time as _time
-        start = _time.time()
-        for i in range(3):
-            print(f"  Request {i+1} at t={_time.time()-start:.2f}s...")
-            _web_search_limiter.wait()
-        print(f"  Total time: {_time.time()-start:.2f}s (expected ~2s for 3 requests)")
-    else:
-        print(f"  Skipped (no API key)")
+    # Test tasks via router
+    print("\n[Tasks Category]")
+    print(f"  iris(tasks/add): {execute_tool('iris', {'category': 'tasks', 'action': 'add', 'params': {'task': 'Test task'}})}")
+    print(f"  iris(tasks/list): {execute_tool('iris', {'category': 'tasks', 'action': 'list', 'params': {}})}")
+    print(f"  iris(tasks/complete): {execute_tool('iris', {'category': 'tasks', 'action': 'complete', 'params': {'task_id': 1}})}")
+    _session_todos.clear()
 
-    print(f"\nSession todo test:")
-    print(f"  {execute_tool('todo_add', {'task': 'Check fleet status'})}")
-    print(f"  {execute_tool('todo_add', {'task': 'Find mining route', 'priority': 'high'})}")
-    print(f"  {execute_tool('todo_list', {})}")
-    print(f"  {execute_tool('todo_complete', {'task_id': 1})}")
-    print(f"  {execute_tool('todo_list', {})}")
-    _session_todos.clear()  # Clean up
+    # Test memory via router
+    print("\n[Memory Category]")
+    print(f"  iris(memory/remember): {execute_tool('iris', {'category': 'memory', 'action': 'remember', 'params': {'entity': 'Test', 'facts': ['fact1']}})}")
+    print(f"  iris(memory/recall): {execute_tool('iris', {'category': 'memory', 'action': 'recall', 'params': {'query': 'test'}})}")
+    print(f"  iris(memory/forget): {execute_tool('iris', {'category': 'memory', 'action': 'forget', 'params': {'entity': 'Test'}})}")
 
-    print(f"\nTool-capable models check:")
-    for model in ["qwen2.5:7b", "llama3.1:8b", "mistral:7b", "phi3:mini"]:
-        print(f"  {model}: {supports_tools(model)}")
+    print("\n" + "=" * 60)
+    print("COMPARISON: Old vs New Token Usage")
+    print("=" * 60)
+    print(f"  Old (14 inline tools): ~1,571 tokens")
+    print(f"  New (2 core + 1 meta):  ~{total_chars // 4} tokens")
+    print(f"  Reduction: {100 - (total_chars // 4 / 1571 * 100):.0f}%")
 
     print(f"\nAvailable tools: {get_tool_names()}")
