@@ -1,24 +1,51 @@
 # IRIS Docker Compose
 #
 # Services:
+# - searxng: Self-hosted metasearch (web search, unlimited)
 # - voice-backend: Python FastAPI (STT + TTS + WebSocket)
 # - voice-service: [DEPRECATED] Node.js WebSocket bridge (use voice-backend WS)
 # - agent-core: Claude Agent SDK
 # - web-app: React frontend (TODO)
 #
-# Usage (recommended - direct connection):
+# Usage (recommended - with SearXNG for unlimited search):
+#   docker compose up -d searxng voice-backend agent-core
+#   # SearXNG at http://localhost:8888
+#   # Voice at ws://localhost:8001/ws/voice
+#
+# Usage (minimal - without search):
 #   docker compose up -d voice-backend agent-core
-#   # Browser connects to ws://localhost:8001/ws/voice
 #
 # Usage (legacy - with Node.js bridge):
 #   docker compose up -d voice-backend voice-service agent-core
-#   # Browser connects to ws://localhost:8002
 #
 # See: specs/PLAN-voice-latency-optimization.md for architecture details
 
 version: "3.8"
 
 services:
+  # ===========================================================================
+  # SearXNG (Self-hosted Metasearch)
+  # Unlimited web search, privacy-focused, aggregates multiple search engines
+  # ===========================================================================
+  searxng:
+    image: searxng/searxng:latest
+    container_name: iris-searxng
+    ports:
+      - "8888:8080"
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8888
+    volumes:
+      - searxng-data:/etc/searxng
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+    networks:
+      - iris-network
+
   # ===========================================================================
   # Voice Backend (Python)
   # STT: faster-whisper | TTS: Chatterbox
@@ -117,6 +144,8 @@ services:
 volumes:
   voice-models:
     name: iris-voice-models
+  searxng-data:
+    name: iris-searxng-data
 
 networks:
   iris-network:
