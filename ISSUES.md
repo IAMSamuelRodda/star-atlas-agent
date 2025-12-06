@@ -578,68 +578,40 @@ MEMORY_TOOLS = [
 ---
 
 ### ARCH-011: Self-Hosted Web Search Infrastructure
-**Severity**: 🟠 High | **Created**: 2025-12-06 | **Priority**: Next Week (Dec 9-13)
-**Component**: voice-backend, distribution
+**Severity**: ✅ Resolved | **Created**: 2025-12-06 | **Resolved**: 2025-12-06
+**Component**: voice-backend
 
-**Context**: IRIS needs web search capability. Current approach uses Brave Search API (requires API key). **Brave free tier is 2000 req/month - at current usage, will exhaust within ~1 week.** Need self-hosted alternative ready ASAP.
+**Problem**: Brave Search API free tier (2000 req/month) insufficient for heavy use.
 
-**Current Implementation** (MVP):
-- Brave Search API with user-provided API key
-- First-run detection prompts user to get key
-- `BRAVE_API_KEY` environment variable or config file
+**Solution Implemented**: Multi-provider search abstraction with SearXNG support.
 
-**Future Self-Hosted Options**:
+**Files Created/Modified**:
+- `src/search_providers.py`: Abstract provider interface + Brave + SearXNG implementations
+- `src/tools.py`: Refactored to use provider abstraction
+- `DEVELOPMENT.md`: Added SearXNG setup documentation
 
-| Option | Description | Pros | Cons |
-|--------|-------------|------|------|
-| **SearXNG** | Metasearch aggregator | No rate limits, privacy | Requires external network |
-| **YaCy** | P2P search engine | Fully offline capable | Small index, slower |
-| **Meilisearch** | Local search engine | Fast, offline | Only searches indexed content |
+**Provider Priority**:
+1. **SearXNG** (if `SEARXNG_URL` set) - unlimited, self-hosted
+2. **Brave** (if `BRAVE_API_KEY` set) - 2000/month free tier
 
-**Architecture Vision**:
-```
-Option A: Bundle SearXNG in .deb
-├── SearXNG as systemd service
-├── IRIS calls localhost:8888
-├── User gets unlimited searches
-└── Challenge: ~500MB+ additional dependencies
+**Quick Start (SearXNG)**:
+```bash
+# Start SearXNG
+docker run -d -p 8888:8080 searxng/searxng
 
-Option B: Arc Forge Hosted Service
-├── iris-search.arcforge.dev
-├── Free tier: 100 searches/day
-├── Paid tier: Unlimited ($X/month)
-├── Revenue stream for open source project
-└── Users can still self-host (all code open source)
-
-Option C: Hybrid
-├── Local SearXNG for power users
-├── Arc Forge hosted for casual users
-├── Brave API fallback (user's own key)
+# Configure IRIS
+echo "SEARXNG_URL=http://localhost:8888" >> ~/.config/iris/secrets.env
 ```
 
-**API Key Collection During .deb Install**:
-- **Cannot fully automate** - Brave requires email signup
-- **Best practice**: First-run wizard with helpful URL
-- **debconf prompts** possible but awkward UX
-- **Environment variable** (`BRAVE_API_KEY`) is standard pattern
+**Implementation Complete**:
+- [x] Research SearXNG Docker deployment
+- [x] Abstract web search to support multiple providers
+- [x] Add SearXNG as alternative search backend
+- [x] Document SearXNG setup in DEVELOPMENT.md
 
-**Implementation Order**:
-1. ✅ MVP: Brave Search API with manual key setup
-2. ✅ Rate limiting (1 req/sec) + quota tracking with alerts
-3. 🔜 **NEXT WEEK**: SearXNG self-hosted option (Docker-based)
-4. 🔮 Future: Arc Forge hosted service (if user demand)
-
-**Next Week Plan** (Dec 9-13):
-- [ ] Research SearXNG Docker deployment
-- [ ] Add SearXNG as alternative search backend
-- [ ] Abstract web search to support multiple providers
-- [ ] Document SearXNG setup in DEVELOPMENT.md
-
-**Prerequisites**:
-- ✅ Brave Search tool working (MVP)
-- ✅ Quota tracking implemented
-
-**Status**: 🟠 High priority - SearXNG implementation next week
+**Future Enhancements** (optional):
+- Arc Forge hosted service for casual users
+- Bundled SearXNG in .deb package
 
 ---
 

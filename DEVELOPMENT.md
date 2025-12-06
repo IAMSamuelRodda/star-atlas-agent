@@ -242,9 +242,50 @@ nano ~/.config/iris/secrets.env
 ```env
 # ~/.config/iris/secrets.env
 
-# Brave Search API (free tier at https://brave.com/search/api/)
+# Web Search - choose ONE:
+# Option 1: SearXNG (self-hosted, unlimited, recommended)
+SEARXNG_URL=http://localhost:8888
+
+# Option 2: Brave Search API (free tier at https://brave.com/search/api/)
 BRAVE_API_KEY=your_brave_api_key_here
+
+# Todoist API (optional, for reminders)
+TODOIST_API_TOKEN=your_todoist_token_here
 ```
+
+### Web Search Providers
+
+IRIS supports multiple web search backends. Priority order:
+1. **SearXNG** (if `SEARXNG_URL` set) - self-hosted, unlimited, privacy-focused
+2. **Brave Search** (if `BRAVE_API_KEY` set) - 2,000 free requests/month
+
+#### Option 1: SearXNG (Recommended)
+
+SearXNG is a self-hosted metasearch engine with no rate limits:
+
+```bash
+# Start SearXNG via Docker
+docker run -d --name searxng \
+  -p 8888:8080 \
+  -e SEARXNG_SECRET="$(openssl rand -hex 32)" \
+  searxng/searxng
+
+# Add to secrets.env
+echo "SEARXNG_URL=http://localhost:8888" >> ~/.config/iris/secrets.env
+```
+
+**Verify it's working:**
+```bash
+curl "http://localhost:8888/search?q=test&format=json" | head -c 500
+```
+
+#### Option 2: Brave Search API
+
+Free tier with 2,000 requests/month. Good for light usage or as fallback.
+
+1. Get free API key at https://brave.com/search/api/
+2. Add to `~/.config/iris/secrets.env`: `BRAVE_API_KEY=your-key`
+3. Monitor quota in IRIS (alerts at 500 and 100 remaining)
 
 ### Priority Order
 
@@ -257,11 +298,13 @@ BRAVE_API_KEY=your_brave_api_key_here
 - Never commit secrets to version control
 - For AI agents setting up new machines: prompt user to provide keys via secure input
 
-### Tools Requiring API Keys
+### Tools Requiring Configuration
 
-| Tool | API Key | Free Tier | Rate Limit |
-|------|---------|-----------|------------|
-| `web_search` | `BRAVE_API_KEY` | 2,000/month | 1 req/sec |
+| Tool | Config Key | Type | Notes |
+|------|------------|------|-------|
+| `web_search` | `SEARXNG_URL` | Self-hosted | Unlimited, recommended |
+| `web_search` | `BRAVE_API_KEY` | API key | 2,000/month free tier |
+| `reminders` | `TODOIST_API_TOKEN` | API key | Optional |
 
 ### Verifying Setup
 

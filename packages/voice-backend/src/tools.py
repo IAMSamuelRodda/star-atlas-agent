@@ -33,6 +33,8 @@ from zoneinfo import ZoneInfo
 
 import requests
 
+from src.search_providers import web_search as _search_provider_search
+
 logger = logging.getLogger(__name__)
 
 
@@ -456,88 +458,13 @@ def _calculate(expression: str) -> str:
 
 
 def _web_search(query: str, count: int = 3) -> str:
-    """Search the web using Brave Search API."""
-    if not BRAVE_API_KEY:
-        return (
-            "Web search is not configured. To enable it:\n"
-            "1. Get a free API key at https://brave.com/search/api/\n"
-            "2. Add to ~/.config/iris/secrets.env: BRAVE_API_KEY=your-key\n"
-            "3. Restart IRIS"
-        )
+    """
+    Search the web using the configured provider.
 
-    # Check if quota is exhausted before making request
-    quota = _load_quota()
-    if quota.get("remaining", MONTHLY_QUOTA) <= 0:
-        reset_date = quota.get("reset_date", "unknown")
-        return f"Web search quota exhausted (0/{MONTHLY_QUOTA}). Resets on {reset_date}."
-
-    # Clamp count to 1-5
-    count = max(1, min(5, count))
-
-    try:
-        # Rate limit: wait if needed (enforces 1 req/sec across all agents)
-        wait_time = _web_search_limiter.wait()
-        if wait_time > 0:
-            logger.info(f"[Tools] Rate limited, waited {wait_time:.2f}s")
-
-        logger.info(f"[Tools] Web search: '{query}' (count={count})")
-
-        response = requests.get(
-            "https://api.search.brave.com/res/v1/web/search",
-            headers={
-                "Accept": "application/json",
-                "X-Subscription-Token": BRAVE_API_KEY,
-            },
-            params={
-                "q": query,
-                "count": count,
-                "safesearch": "moderate",
-            },
-            timeout=10,
-        )
-
-        # Update quota tracking from response headers
-        alert_msg = _update_quota_from_headers(response.headers)
-
-        if response.status_code == 401:
-            return "Web search API key is invalid. Please check your BRAVE_API_KEY."
-        elif response.status_code == 429:
-            return "Web search rate limit reached. Please try again in a second."
-        elif response.status_code != 200:
-            logger.error(f"[Tools] Brave API error: {response.status_code} {response.text}")
-            return f"Web search failed (HTTP {response.status_code})"
-
-        data = response.json()
-        web_results = data.get("web", {}).get("results", [])
-
-        if not web_results:
-            result = f"No results found for '{query}'"
-            return result + (alert_msg or "")
-
-        # Format results for LLM consumption
-        results = []
-        for i, result in enumerate(web_results[:count], 1):
-            title = result.get("title", "No title")
-            description = result.get("description", "No description")
-            url = result.get("url", "")
-            results.append(f"{i}. {title}\n   {description}\n   URL: {url}")
-
-        result = f"Search results for '{query}':\n\n" + "\n\n".join(results)
-
-        # Append quota alert if threshold crossed
-        if alert_msg:
-            result += alert_msg
-
-        return result
-
-    except requests.Timeout:
-        return "Web search timed out. Please try again."
-    except requests.RequestException as e:
-        logger.error(f"[Tools] Web search error: {e}")
-        return f"Web search failed: {str(e)}"
-    except Exception as e:
-        logger.error(f"[Tools] Web search unexpected error: {e}")
-        return f"Web search error: {str(e)}"
+    Supports multiple backends (SearXNG preferred, Brave fallback).
+    See src/search_providers.py for implementation.
+    """
+    return _search_provider_search(query, count)
 
 
 # ==============================================================================
