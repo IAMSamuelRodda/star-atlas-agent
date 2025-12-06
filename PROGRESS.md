@@ -26,7 +26,7 @@
 
 ## 📌 Epic 0: Native Client - DearPyGui Voice Interface (PRIMARY)
 
-**Status**: 🟢 Complete (14 tools including memory)
+**Status**: 🟢 Complete (meta-tool router: 3 tools → 14 capabilities, 76% context reduction)
 **Priority**: PRIMARY - This is the main development track
 
 > **Implementation**: Python DearPyGui desktop application with local Ollama LLM
@@ -94,11 +94,15 @@
 | task_0_7_7 | Web search tool (Brave Search API) | 2.3 | 1d | 🟢 |
 | task_0_7_8 | Todoist reminder tools (create, list, complete) | 2.5 | 1d | 🟢 |
 
-> **14 Tools Complete**:
-> - Session: `todo_add`, `todo_complete`, `todo_list` (track agent's multi-step work)
-> - Utility: `get_current_time`, `calculate`, `web_search`
-> - Todoist: `todoist_create_task`, `todoist_list_tasks`, `todoist_complete_task`
-> - Memory: `memory_remember`, `memory_recall`, `memory_forget`, `memory_relate`, `memory_summary`
+> **Meta-Tool Router** (76% context reduction):
+> - **Architecture**: 3 actual tools (2 core + 1 meta) → 14 capabilities
+> - **Core tools** (always inline): `get_current_time`, `calculate`
+> - **Meta-tool**: `iris(category, action, params)` routes to 12 capabilities:
+>   - `search`: web lookup (Brave API)
+>   - `tasks`: session tracking (add/complete/list)
+>   - `reminders`: Todoist (create/list/done)
+>   - `memory`: knowledge graph (remember/recall/forget/relate/summary)
+> - **Token reduction**: 1,571 → 381 tokens (same pattern as lazy-mcp)
 > **Ollama models with tool support**: qwen2.5, llama3.1, mistral
 > **Config**: API keys in `~/.config/iris/secrets.env` (BRAVE_API_KEY, TODOIST_API_KEY)
 > **Memory DB**: `~/.config/iris/memory.db` (SQLite knowledge graph)
@@ -487,7 +491,7 @@
 
 | Epic | Features | Tasks | Status | Notes |
 |------|----------|-------|--------|-------|
-| **0. Native Client** | **7** | **21** | 🟢/🟡 | Core complete, tools in progress |
+| **0. Native Client** | **7** | **21** | 🟢 | Complete (meta-tool router, 76% context reduction) |
 | 2. Memory Service | 4 | 10 | 🟢 | SHARED - Complete |
 | 4. Voice Service | 4 | 10 | 🟢 | SHARED - Complete |
 
@@ -507,14 +511,14 @@
 | Epic | Features | Status | Notes |
 |------|----------|--------|-------|
 | **9. Subagent Delegation** | 5 | 🔍 Spike | After memory (ARCH-008) |
-| **10. Context Optimization** | 5 | 🔍 Spike | After delegation (ARCH-009) |
+| **10. Context Optimization** | 5 | 🟡 Partial | Tool tokens done (76%↓), runtime context pending |
 | **11. Native Memory** | 5 | 🟢 Complete | Python port done (2025-12-06) |
 
 > **Last Updated**: 2025-12-06
 > **Focus**: Native Primary, Web Secondary
 > **Native MVP**: DearPyGui desktop app with local Ollama + faster-whisper + Kokoro
 > **Voice latency**: ~700ms round-trip (target <500ms)
-> **Current Work**: Epic 0 + 11 complete (14 tools); next: Subagent Delegation (Epic 9)
+> **Current Work**: Epic 0 + 11 complete; meta-tool router (76% context reduction); next: Subagent Delegation (Epic 9)
 
 ---
 
@@ -557,21 +561,23 @@
 > **Current Limitation**: Ollama supports max 2 models loaded simultaneously
 > **Migration Trigger**: Need >2 concurrent models → evaluate vLLM/SGLang
 
-### 🔮 Epic 10: Context Window Optimization (FUTURE)
+### 🟡 Epic 10: Context Window Optimization (PARTIAL)
 
-**Status**: 🔍 Needs Spike | **Prerequisite**: Epic 9 functional
+**Status**: 🟡 Partial | **Tool tokens complete**, runtime context pending
 **Issue**: ARCH-009
 
-| Feature | Description | Complexity |
-|---------|-------------|------------|
-| 10.1 | Conversation summarization (rolling summary) | 2.8 |
-| 10.2 | Sliding window with key facts | 2.5 |
-| 10.3 | Tool result compression | 2.3 |
-| 10.4 | Semantic chunking for long contexts | 3.0 |
-| 10.5 | Context budget monitoring | 2.0 |
+| Feature | Description | Complexity | Status |
+|---------|-------------|------------|--------|
+| 10.0 | **Tool definition optimization (meta-tool router)** | 2.5 | 🟢 |
+| 10.1 | Conversation summarization (rolling summary) | 2.8 | 🔴 |
+| 10.2 | Sliding window with key facts | 2.5 | 🔴 |
+| 10.3 | Tool result compression | 2.3 | 🔴 |
+| 10.4 | Semantic chunking for long contexts | 3.0 | 🔴 |
+| 10.5 | Context budget monitoring | 2.0 | 🔴 |
 
+> **Tool Optimization Complete (2025-12-06)**: Meta-tool router reduces tool tokens by 76% (1,571 → 381)
 > **Goal**: Squeeze more context from models for natural conversations
-> **Approach**: Summarize older messages, compress tool outputs, preserve key facts
+> **Remaining**: Summarize older messages, compress tool outputs, preserve key facts
 
 ### 🟢 Epic 11: Native Memory Integration (COMPLETE)
 
