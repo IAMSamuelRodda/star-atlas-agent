@@ -194,10 +194,10 @@
 
 **Next Up (MVP scope):**
 - [x] **Voice conciseness**: IRIS responses max 2 sentences for TTS
-- [x] **TTS testing**: Chatterbox voice synthesis working
+- [x] **TTS testing**: Kokoro TTS voice synthesis working (replaced Chatterbox)
 - [x] **End-to-end voice testing**: Full voice loop tested (ack + response)
-- [ ] **Audio queue**: Fix playback overlap (ack plays over response)
-- [ ] **TTS pre-warming**: Load model on startup to avoid cold start
+- [x] **Audio queue**: Fixed playback overlap with nextPlayTime scheduling
+- [x] **TTS pre-warming**: Kokoro model pre-warmed on startup (~42ms warm)
 - [ ] CITADEL: REST API for blockchain/game data (separate repo)
 
 **Deferred from MVP (2025-12-02):**

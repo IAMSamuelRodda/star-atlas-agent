@@ -48,7 +48,7 @@ pnpm dev
 - **Frontend**: React 18 + TypeScript + Vite
 - **Backend**: Node.js on Digital Ocean VPS
 - **Database**: SQLite (pip-by-arc-forge pattern)
-- **Voice**: Chatterbox (self-hosted STT/TTS)
+- **Voice**: faster-whisper STT + Kokoro TTS (self-hosted, GPU accelerated)
 - **Agent**: Claude Agent SDK with MCP tools
 - **Cost**: $0/month incremental (existing VPS)
 
