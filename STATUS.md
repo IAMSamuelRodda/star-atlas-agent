@@ -3,7 +3,7 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-06 (14 native tools complete - session todo, utilities, Todoist, memory)
+**Last Updated**: 2025-12-06 (14 capabilities via meta-tool router - 76% context reduction)
 **Current Phase**: Implementation (Native client development)
 **Version**: 0.1.0 (Pre-MVP)
 **Focus**: Native Primary, Web Secondary
@@ -23,7 +23,7 @@
 | **Agent Core** | **Done** | Epic 3 complete (Claude Agent SDK, IrisAgent class) |
 | **Voice Service** | **Done** | Epic 4 complete (faster-whisper STT, Kokoro TTS) |
 | **Web App** | **Done** | Epic 5 complete (React + Vite, chat UI, voice PTT) |
-| **Tool System** | **Done** | 14 native tools (session todo, utilities, Todoist, memory) |
+| **Tool System** | **Done** | 3 tools (2 core + meta-router) → 14 capabilities, 76% token reduction |
 | CI/CD Pipeline | N/A | Main-only workflow; deploy via docker-compose |
 | Test Coverage | Partial | 12 tests for memory service |
 | Known Bugs | None | Early implementation |
@@ -125,21 +125,21 @@
 
 **In Progress:**
 - ✅ **Local Tool Integration** (2025-12-06) **COMPLETE**:
-  - **Native Ollama Tools** (14 tools, 0ms overhead):
-    - Session: `todo_add`, `todo_complete`, `todo_list` (like Claude Code's TodoWrite)
-    - Utility: `get_current_time`, `calculate`, `web_search` (Brave API)
-    - Todoist: `todoist_create_task`, `todoist_list_tasks`, `todoist_complete_task`
-    - Memory: `memory_remember`, `memory_recall`, `memory_forget`, `memory_relate`, `memory_summary`
-  - **Memory (Knowledge Graph)**: SQLite persistent storage
-    - Entities, observations, relations (Anthropic MCP Memory pattern)
-    - Database: `~/.config/iris/memory.db`
-    - Survives across sessions (unlike session todos)
-  - **Todoist Integration**: Direct REST API (simpler than MCP)
-    - Natural language due dates ("tomorrow", "in 4 hours")
-    - Fuzzy task completion (search by content)
-    - Config: `TODOIST_API_KEY` in `~/.config/iris/secrets.env`
+  - **Meta-Tool Router** (76% context reduction):
+    - Old: 14 inline tools = ~1,571 tokens
+    - New: 3 tools (2 core + 1 meta) = ~381 tokens
+    - Pattern: Same as lazy-mcp (category → action → params)
+  - **Architecture**:
+    - Tier 1 (core): `get_current_time`, `calculate` - always inline
+    - Tier 2 (meta): `iris(category, action, params)` routes to 12 capabilities
+    - Categories: search, tasks, reminders, memory
+  - **14 Capabilities** (via meta-tool):
+    - Search: web lookup (Brave API)
+    - Tasks: session tracking (add/complete/list)
+    - Reminders: Todoist (create/list/done)
+    - Memory: knowledge graph (remember/recall/forget/relate/summary)
+  - **Memory (Knowledge Graph)**: SQLite at `~/.config/iris/memory.db`
   - **Files**: `src/tools.py`, `src/memory.py`
-  - **MCP Bridge**: `src/mcp_bridge.py` available for future MCP tools
 
 - ✅ **Voice Latency Architecture Overhaul** (2025-12-03 - ARCH-003) **COMPLETE**:
   - ✅ Phase 1.1: WebSocket endpoint added to Python FastAPI (`/ws/voice`)
