@@ -312,10 +312,9 @@ class SileroVAD:
         # Silero expects 512 samples at 16kHz (32ms chunks)
         tensor = torch.from_numpy(audio_chunk)
 
-        # Thread-safe model inference
-        with SileroVAD._model_lock:
-            speech_prob = self.model(tensor, sample_rate).item()
-
+        # Direct model inference (lock removed - was causing hangs)
+        # Note: Concurrent access could cause issues, but single-threaded use is fine
+        speech_prob = self.model(tensor, sample_rate).item()
         return speech_prob > self.threshold, speech_prob
 
 
@@ -1447,6 +1446,7 @@ def run_gui_mode(iris: IrisLocal):
                             response = iris._call_llm(text)
 
                             gui._set_pipeline_status("llm", "done")
+                            gui._update_context_stats()  # Update token counter
                             gui._set_pipeline_status("tts", "active")
 
                             gui.add_message("assistant", response)

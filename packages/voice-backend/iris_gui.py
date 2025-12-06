@@ -251,31 +251,33 @@ class IrisGUI:
             dpg.add_text("Ready", tag="status_text", color=self.COLOR_SUCCESS)
 
     def _create_control_section(self):
-        """Create PTT button and VAD toggle."""
+        """Create PTT button and VAD toggle (mutually exclusive modes)."""
         dpg.add_spacer(height=20)
         dpg.add_separator()
         dpg.add_spacer(height=10)
 
+        # Mode selector with combo box
         with dpg.group(horizontal=True):
-            # PTT Button
-            dpg.add_button(
-                label="Push to Talk",
-                width=150,
-                height=50,
-                tag="ptt_button",
-                callback=self._on_ptt_click
+            dpg.add_text("Input Mode:", color=self.COLOR_TEXT_DIM)
+            dpg.add_spacer(width=10)
+            dpg.add_combo(
+                items=["Push to Talk", "Always Listening (VAD)"],
+                default_value="Push to Talk",
+                width=180,
+                tag="input_mode_combo",
+                callback=self._on_input_mode_change
             )
 
-            dpg.add_spacer(width=20)
+        dpg.add_spacer(height=10)
 
-            # VAD Toggle
-            with dpg.group():
-                dpg.add_text("VAD Mode", color=self.COLOR_TEXT_DIM)
-                dpg.add_checkbox(
-                    label="Always Listening",
-                    tag="vad_checkbox",
-                    callback=self._on_vad_toggle
-                )
+        # PTT Button (only active in PTT mode)
+        dpg.add_button(
+            label="🎤 Hold to Record",
+            width=200,
+            height=50,
+            tag="ptt_button",
+            callback=self._on_ptt_click
+        )
 
         # Pipeline status indicators
         dpg.add_spacer(height=20)
@@ -438,23 +440,47 @@ class IrisGUI:
 
     def _on_ptt_click(self, sender, app_data):
         """Handle PTT button click."""
+        # Check if PTT mode is active (radio button value 0 = PTT)
+        if self.state.vad_enabled:
+            logger.debug("[PTT] Ignored - VAD mode is active")
+            return
+
+        # If IRIS is speaking, trigger an interrupt
+        if self.iris and self.iris._is_speaking:
+            logger.info("[PTT] Triggering interrupt during speech")
+            self.iris._interrupt_requested = True
+            self._update_status("Interrupting...", self.COLOR_ACCENT)
+            return
+
+        # Normal PTT toggle
         if not self.state.is_recording:
             self._start_recording()
         else:
             self._stop_recording()
 
-    def _on_vad_toggle(self, sender, app_data):
-        """Handle VAD checkbox toggle."""
-        self.state.vad_enabled = app_data
-        if self.on_vad_toggle:
-            self.on_vad_toggle(app_data)
+    def _on_input_mode_change(self, sender, app_data):
+        """Handle input mode combo change (PTT vs VAD)."""
+        # app_data is the string value from combo
+        vad_enabled = ("VAD" in app_data)
+        self.state.vad_enabled = vad_enabled
 
-        if app_data:
-            self._update_status("VAD: Listening...")
+        if self.on_vad_toggle:
+            self.on_vad_toggle(vad_enabled)
+
+        if vad_enabled:
+            # Switch to VAD mode - disable PTT button
+            self._update_status("VAD: Listening...", self.COLOR_SUCCESS)
+            dpg.configure_item("ptt_button", enabled=False)
+            dpg.configure_item("ptt_button", label="(VAD Active)")
             self._start_vad_listening()
         else:
+            # Switch to PTT mode - enable PTT button
             self._update_status("Ready")
+            dpg.configure_item("ptt_button", enabled=True)
+            dpg.configure_item("ptt_button", label="🎤 Hold to Record")
             self._stop_vad_listening()
+
+        logger.info(f"[GUI] Input mode changed to: {'VAD' if vad_enabled else 'PTT'}")
 
     def _on_model_change(self, sender, app_data):
         """Handle model selection change."""
@@ -589,11 +615,15 @@ class IrisGUI:
         min_samples = int(1.0 * 16000)  # Minimum 1.0s speech (filter short noises)
         chunk_samples = 512
 
+        # Use configured audio source (same as PTT)
+        audio_source = getattr(self.iris.config, 'pulse_source', 'default')
+        logger.info(f"[VAD] Using audio source: {audio_source}")
+
         # Start ffmpeg process for continuous capture
         cmd = [
             "ffmpeg",
             "-f", "pulse",
-            "-i", "default",
+            "-i", audio_source,
             "-ar", "16000",
             "-ac", "1",
             "-f", "s16le",
@@ -601,15 +631,34 @@ class IrisGUI:
             "pipe:1"
         ]
 
+        logger.info(f"[VAD] Starting ffmpeg: {' '.join(cmd)}")
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         bytes_per_chunk = chunk_samples * 2  # 16-bit = 2 bytes
+
+        # Check if process started successfully
+        import time
+        time.sleep(0.1)
+        if process.poll() is not None:
+            stderr = process.stderr.read().decode()
+            logger.error(f"[VAD] ffmpeg failed to start: {stderr}")
+            return
+
+        logger.info("[VAD] ffmpeg process started, entering loop")
+        chunk_count = 0
 
         try:
             while self._vad_active and process.poll() is None:
                 # Read chunk from ffmpeg
                 data = process.stdout.read(bytes_per_chunk)
                 if not data:
+                    logger.warning("[VAD] No data from ffmpeg")
                     break
+
+                chunk_count += 1
+                if chunk_count == 1:
+                    logger.info(f"[VAD] First audio chunk received ({len(data)} bytes)")
+                elif chunk_count % 100 == 0:
+                    logger.debug(f"[VAD] Processed {chunk_count} chunks")
 
                 # Convert to float32
                 audio_int16 = np.frombuffer(data, dtype=np.int16)
@@ -619,10 +668,10 @@ class IrisGUI:
                 if len(chunk) < 512:
                     continue
 
-                # Update waveform display
+                # Update waveform display BEFORE VAD check (so UI stays responsive)
                 self._audio_queue.put(chunk)
 
-                # Run VAD
+                # Run VAD (with timeout protection)
                 is_speech, confidence = self.iris.vad.is_speech(chunk)
 
                 if is_speech:

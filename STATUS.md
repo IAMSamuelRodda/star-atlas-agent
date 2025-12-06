@@ -3,7 +3,7 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-06 (14 capabilities via meta-tool router - 76% context reduction)
+**Last Updated**: 2025-12-06 (BUG-001 resolved: PTT/VAD mode toggle UX fixed)
 **Current Phase**: Implementation (Native client development)
 **Version**: 0.1.0 (Pre-MVP)
 **Focus**: Native Primary, Web Secondary
@@ -251,6 +251,20 @@ None
 ---
 
 ## Recent Achievements (Last 2 Weeks)
+
+**PTT/VAD Mode Toggle UX Fix (2025-12-06)**
+- **BUG-001 Resolved**: PTT and VAD modes now mutually exclusive
+- **UI Changes**:
+  - Replaced checkbox+button with combo box dropdown
+  - PTT button disabled when VAD mode active
+  - PTT press triggers interrupt during TTS playback
+- **Core Fixes**:
+  - Removed thread lock on VAD model (was causing hangs)
+  - Added context stats update after PTT processing
+  - Fixed VAD audio source to use configured pulse source
+- **Minor Issues Documented**:
+  - LOW-001: pthread_join errors on shutdown (cosmetic)
+  - LOW-002: Multiple VAD model loads during barge-in (stable)
 
 **Tool System Complete (2025-12-06)**
 - **14 Native Tools** (0ms overhead):

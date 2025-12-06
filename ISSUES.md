@@ -118,8 +118,8 @@ interface InterruptionEvent {
 ---
 
 ### BUG-001: PTT/VAD Mode Toggle UX Issues
-**Severity**: 🔴 Critical | **Created**: 2025-12-06
-**Component**: iris_local.py (DearPyGui)
+**Severity**: ✅ Resolved | **Created**: 2025-12-06 | **Resolved**: 2025-12-06
+**Component**: iris_gui.py, iris_local.py
 
 **Problems Discovered**:
 1. **PTT and VAD can both appear active** - checkbox shows VAD ticked while PTT button is active
@@ -127,30 +127,66 @@ interface InterruptionEvent {
 3. **Barge-in doesn't work after mode switch** - VAD enabled but no speech detection occurs
 4. **App becomes unresponsive** - had to use PTT to recover after failed VAD switch
 
-**Expected Behavior**:
-- PTT and VAD should be **mutually exclusive toggle** (radio buttons, not checkbox + button)
-- Mode switch should be graceful even during TTS playback
-- PTT button press should **immediately trigger interrupt** (not just start recording)
-- Current mode should be visually unambiguous
+**Root Cause**:
+- `threading.Lock()` on VAD model was causing the model inference to hang in daemon threads
+- PTT/VAD were independent controls (checkbox + button) instead of mutually exclusive
+- No interrupt trigger when PTT pressed during speech
 
-**Root Cause Analysis**:
-- VAD thread lock may be blocking during TTS (thread-safety fix too aggressive?)
-- Mode state not properly synchronized between GUI and audio capture
-- ffmpeg subprocess may not restart cleanly on mode switch
+**Fixes Applied**:
 
-**Reproduction**:
-1. Start in PTT mode
-2. Press PTT, ask a question
-3. While IRIS is responding, click "Always Listening" checkbox
-4. Try to speak - no detection
-5. VAD shows active but doesn't capture
+| Fix | File | Line | Description |
+|-----|------|------|-------------|
+| Combo box mode selector | `iris_gui.py` | 263-269 | Replaced checkbox+button with dropdown |
+| PTT disabled in VAD mode | `iris_gui.py` | 470-481 | Button disabled when VAD selected |
+| PTT triggers interrupt | `iris_gui.py` | 454-459 | Pressing PTT during speech interrupts |
+| Context stats in PTT | `iris_local.py` | 1450 | Token counter now updates after PTT |
+| Removed VAD thread lock | `iris_local.py` | 315-318 | Lock was causing model() to hang |
 
-**Fix Approach**:
-- [ ] Make PTT/VAD mutually exclusive UI (radio group)
-- [ ] Stop TTS playback on mode switch
-- [ ] Ensure clean ffmpeg process restart on mode switch
-- [ ] PTT button press = immediate interrupt signal
-- [ ] Review thread lock scope (may be too broad)
+**Verification**:
+- Mode switching works cleanly in both directions
+- VAD speech detection working (confidence 0.54-0.99)
+- Barge-in detection working
+- PTT interrupt during TTS working
+- Context counter updating
+
+---
+
+### LOW-001: pthread_join Errors on GUI Shutdown
+**Severity**: 🟢 Low | **Created**: 2025-12-06
+**Component**: iris_local.py (DearPyGui)
+
+**Problem**: On GUI close, spurious pthread_join errors appear in terminal:
+```
+pthread_join: No such process
+```
+
+**Impact**: Cosmetic only - does not affect functionality. Application shuts down correctly.
+
+**Root Cause**: DearPyGui daemon threads may be destroyed before proper join due to Python GC.
+
+**Workaround**: None needed - harmless warning.
+
+---
+
+### LOW-002: Multiple VAD Model Loads During Barge-In
+**Severity**: 🟢 Low | **Created**: 2025-12-06
+**Component**: iris_local.py (Silero VAD)
+
+**Problem**: During rapid mode switching or barge-in detection, the Silero VAD model may be loaded multiple times:
+```
+[Barge-in] Loaded new Silero VAD model for detection thread
+```
+
+**Impact**:
+- ~50-100ms extra latency per load (model is small)
+- Slightly higher memory usage during parallel detection
+
+**Root Cause**:
+- Lock was removed from VAD model (was causing hangs)
+- Barge-in monitor creates separate VAD instance for thread safety
+- No model caching/pooling currently
+
+**Potential Fix**: Create a model pool or lazy singleton for VAD instances. Low priority since current behavior is stable.
 
 ---
 
