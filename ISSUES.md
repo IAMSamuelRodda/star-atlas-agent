@@ -50,25 +50,48 @@ Custom streaming wrapper for maximum speed:
 
 ---
 
-### ARCH-005: VAD (Voice Activity Detection) Missing
-**Severity**: 🔴 Critical | **Created**: 2025-12-05
+### ARCH-005: VAD (Voice Activity Detection)
+**Severity**: ✅ Resolved | **Created**: 2025-12-05 | **Resolved**: 2025-12-06
 **Component**: voice-backend
 
-**Problem**: No real-time voice activity detection. Currently using push-to-talk.
+**Original Problem**: No real-time voice activity detection. Currently using push-to-talk.
 
-**Impact**:
-- Can't detect end-of-speech automatically for streaming STT
-- Can't handle interruptions gracefully
-- Can't enable hands-free operation
-- Blocks ARCH-004 (streaming STT needs VAD trigger)
+**Solution Implemented**: Silero VAD v5 integrated with full hands-free mode.
 
-**Recommended Solution**: Silero VAD v5 (~50ms detection)
+**Completed**:
+- [x] Integrate Silero VAD into voice-backend (`src/vad.py`)
+- [x] Wire VAD to trigger STT finalization (speech offset detection)
+- [x] Enable interruption detection (barge-in during TTS)
+- [x] Hands-free mode (VAD mode in GUI - speech onset + offset detection)
 
-**Action Items**:
-- [ ] Integrate Silero VAD into voice-backend
-- [ ] Wire VAD to trigger STT finalization
-- [ ] Enable interruption detection
-- [ ] Design hands-free mode
+**How it works**:
+1. **PTT mode**: User holds spacebar, VAD detects end-of-speech
+2. **VAD mode**: Continuous listening, VAD detects both start and end of speech
+3. **Barge-in**: VAD monitors during TTS playback, interrupts on speech detection
+
+**Remaining enhancements** (split to ASP-006):
+- Wake word ("Hey IRIS") for reduced false positives
+- Background noise robustness improvements
+
+---
+
+### ASP-006: Wake Word Detection ("Hey IRIS")
+**Severity**: 🟢 Low | **Created**: 2025-12-06
+**Component**: voice-backend
+**Type**: Enhancement (not blocking)
+
+**Problem**: In VAD mode, any speech triggers IRIS. A wake word would reduce false positives.
+
+**Options**:
+| Approach | Latency | Accuracy | Complexity |
+|----------|---------|----------|------------|
+| **Porcupine** (Picovoice) | ~50ms | High | Low (pre-built) |
+| **OpenWakeWord** | ~100ms | Medium | Medium (custom training) |
+| **Whisper-based** | ~200ms | High | Low (reuse STT) |
+
+**Recommended**: Start with Whisper-based (detect "hey iris" in first 2s of audio, discard if not present). Simple, no new dependencies.
+
+**Status**: 🔮 Future (hands-free works without it)
 
 ---
 
