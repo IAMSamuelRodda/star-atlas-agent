@@ -56,7 +56,8 @@
 | task_0_3_3 | Implement audio device management (sounddevice) | 2.0 | 0.5d | 🟢 |
 | task_0_3_4 | Add ffmpeg fallback for audio capture | 2.2 | 0.5d | 🟢 |
 
-> **Latency achieved**: STT ~180ms, TTS ~50ms (GPU), total round-trip ~700ms
+> **Latency achieved**: STT 22-28ms (beam_size=1), TTS 42ms (Kokoro GPU), LLM 70-88ms first token
+> **Total round-trip**: ~150-250ms (local Ollama), ~700ms (cloud Claude)
 
 ### Feature 0.4: VAD & Barge-In Interruption (2 days) 🟢
 | ID | Task | Complexity | Est. | Status |
@@ -66,6 +67,7 @@
 | task_0_4_3 | Add interruption context to conversation history | 2.2 | 0.5d | 🟢 |
 
 > **Implemented**: `InterruptionEvent` dataclass tracks intended/spoken/user-interruption
+> **ARCH-006 Complete** (2025-12-06): Interruption context now includes user's interruption text in LLM context
 
 ### Feature 0.5: Conversation Memory (1 day) 🟢
 | ID | Task | Complexity | Est. | Status |
@@ -81,6 +83,11 @@
 | task_0_6_1 | Add pipeline status indicators (STT/LLM/TTS) | 1.8 | 0.5d | 🟢 |
 | task_0_6_2 | Add interruption context display panel | 1.5 | 0.25d | 🟢 |
 | task_0_6_3 | Fix audio overlap race condition with mutex | 2.0 | 0.25d | 🟢 |
+| task_0_6_4 | Voice style selector (5 styles) | 1.5 | 0.25d | 🟢 |
+| task_0_6_5 | PTT/VAD mode combo box (mutually exclusive) | 1.8 | 0.25d | 🟢 |
+
+> **GUI-001 Complete** (2025-12-06): Voice style selector with Normal, Formal, Concise, Immersive, Learning
+> **BUG-001 Fixed** (2025-12-06): PTT/VAD toggle now mutually exclusive combo box
 
 ### Feature 0.7: Local Tool Integration (3-5 days) 🟢
 | ID | Task | Complexity | Est. | Status |
@@ -249,7 +256,7 @@
 | task_4_1_1 | Deploy voice-backend Docker container | 2.8 | 2d | 🟢 |
 | task_4_1_2 | Configure faster-whisper + Kokoro models | 2.2 | 2d | 🟢 |
 
-> **Note**: Using faster-whisper for STT (181ms GPU), Kokoro-82M for TTS (42ms GPU, 11 voices).
+> **Note**: Using faster-whisper for STT (22-28ms GPU warm), Kokoro-82M for TTS (42ms GPU, 11 voices).
 
 ### Feature 4.2: WebSocket Voice Server (5 days) 🟢
 | ID | Task | Complexity | Est. | Status |
@@ -267,8 +274,9 @@
 | task_4_3_2 | Implement TTS response streaming | 3.2 | 2d | 🟢 |
 | task_4_3_3 | Add latency monitoring | **3.5** ⚠️ | 1.5d | 🟢 |
 
-> **Latency achieved**: STT 181ms (GPU), TTS 520ms (GPU), Fast-layer ack 3-12ms
+> **Latency achieved**: STT 22-28ms (GPU, beam_size=1), TTS 42ms (Kokoro GPU), Fast-layer ack 3-12ms
 > **Benchmark**: `packages/voice-backend/test_e2e_latency_v3.py`
+> **Note**: 181ms was cold-start; warm is 22-28ms after ARCH-004 optimization
 
 ### Feature 4.4: Voice Service API (3 days) 🟢
 | ID | Task | Complexity | Est. | Status |
@@ -377,6 +385,8 @@
 **Estimated**: 15 days | **Status**: 🔴
 
 > **Note**: Web/E2E testing - Native Client tested manually during development
+> **Reality Check**: Python voice-backend has 0 unit tests. Only TypeScript memory-service has 1 test file.
+> **Benchmark scripts exist**: `test_e2e_latency*.py`, `test_streaming_stt.py` - but these are perf tests, not unit tests.
 
 ### Feature 7.1: Unit Tests (5 days)
 | ID | Task | Complexity | Est. | Status |
@@ -517,8 +527,9 @@
 > **Last Updated**: 2025-12-06
 > **Focus**: Native Primary, Web Secondary
 > **Native MVP**: DearPyGui desktop app with local Ollama + faster-whisper + Kokoro
-> **Voice latency**: ~700ms round-trip (target <500ms)
-> **Current Work**: Epic 0 + 11 complete; meta-tool router (76% context reduction); next: Subagent Delegation (Epic 9)
+> **Voice latency**: ~150-250ms local (target <500ms ✅), ~700ms cloud
+> **Recent**: GUI-001 (voice styles), ARCH-006 (interruption context), BUG-001 (PTT/VAD toggle)
+> **Next priorities**: ARCH-011 (SearXNG search), ARCH-005 (full hands-free VAD), GUI-002/003 (activity display)
 
 ---
 
