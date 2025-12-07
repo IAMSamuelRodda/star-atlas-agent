@@ -3,7 +3,7 @@
 > **Purpose**: Current work, active bugs, and recent changes (2-week rolling window)
 > **Lifecycle**: Living (update daily/weekly during active development)
 
-**Last Updated**: 2025-12-06 (BUG-001 resolved: PTT/VAD mode toggle UX fixed)
+**Last Updated**: 2025-12-07 (Tool discovery system implemented with E2E tests)
 **Current Phase**: Implementation (Native client development)
 **Version**: 0.1.0 (Pre-MVP)
 **Focus**: Native Primary, Web Secondary
@@ -122,6 +122,21 @@
   - Measured warm TTS: 2-3s for acknowledgment synthesis
   - Known issue: TTS cold start ~2s (Kokoro model load)
   - ✅ Fixed: Audio overlap (ack + response now play sequentially)
+
+**Completed (2025-12-07):**
+- **Tool Discovery System** (`iris_discover`):
+  - New `iris_discover` tool for capability lookup by keyword
+  - Rich capability documentation with keywords, examples, actions
+  - 4 capability categories: reminders, search, tasks, memory
+  - System prompt updated with discovery pattern guidance
+  - E2E test suite: `test_discovery_e2e.py` (60% pass rate, 5 tests)
+  - Test harness captures tool calls + spoken responses
+  - Files: `src/tools.py` (CAPABILITY_DOCS, _iris_discover), `iris_local.py` (DISCOVERY PATTERN)
+- **First-Class todo_write Tool** (CodeForge pattern):
+  - Replaced meta-tool internal planning with dedicated `todo_write`
+  - Tracks multi-step tasks (pending/in_progress/completed status)
+  - Smaller models understand direct tool calls better than routing
+  - Updated system prompt with multi-request handling examples
 
 **In Progress:**
 - ✅ **Local Tool Integration** (2025-12-06) **COMPLETE**:

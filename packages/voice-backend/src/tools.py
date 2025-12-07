@@ -229,11 +229,115 @@ def get_quota_status() -> dict:
 
 
 # ==============================================================================
-# Session Todo List (Internal Task Tracking)
+# Session Todo List (User-facing Task Tracking)
 # ==============================================================================
 
 # Session-scoped todo list - cleared on restart, used for multi-step tasks
 _session_todos: list[dict] = []
+
+
+# ==============================================================================
+# TodoWrite (First-class task tracking - like CodeForge's TodoWrite)
+# ==============================================================================
+
+# Current todo list - tracks tasks IRIS identifies from user requests
+_todo_items: list[dict] = []
+
+
+def _todo_write(todos: list[dict]) -> str:
+    """
+    Update the task list. Replaces entire list (like CodeForge).
+
+    Each todo should have:
+    - content: What needs to be done (e.g., "Search for Bitcoin news")
+    - status: "pending", "in_progress", or "completed"
+
+    Rules:
+    - Only ONE task should be "in_progress" at a time
+    - Mark tasks "completed" as you finish them
+    """
+    global _todo_items
+
+    # Validate and create todo items
+    _todo_items = []
+    for i, todo in enumerate(todos):
+        if isinstance(todo, str):
+            # Simple string - convert to dict
+            todo = {"content": todo, "status": "pending"}
+        _todo_items.append({
+            "id": i + 1,
+            "content": todo.get("content", str(todo)),
+            "status": todo.get("status", "pending"),
+        })
+
+    # Log the plan
+    in_progress = next((t for t in _todo_items if t["status"] == "in_progress"), None)
+    completed = sum(1 for t in _todo_items if t["status"] == "completed")
+    pending = sum(1 for t in _todo_items if t["status"] == "pending")
+
+    # Build output like CodeForge
+    lines = []
+    if in_progress:
+        lines.append(f"◐ {in_progress['content']}")
+
+    for item in _todo_items:
+        icon = "✓" if item["status"] == "completed" else ("◐" if item["status"] == "in_progress" else "○")
+        lines.append(f"  {icon} {item['content']}")
+
+    status = f"({completed}/{len(_todo_items)} done)"
+    output = "\n".join(lines) + f"\n{status}"
+
+    logger.info(f"[TodoWrite] {len(_todo_items)} tasks: {completed} done, {pending} pending")
+
+    return output
+
+
+def get_todo_items() -> list[dict]:
+    """Get current todo items for UI display."""
+    return _todo_items.copy()
+
+
+# Legacy internal plan functions (kept for backward compatibility)
+_internal_plan: list[dict] = []
+
+
+def _plan_tasks(tasks: list[str]) -> str:
+    """Legacy: Use todo_write instead."""
+    return _todo_write([{"content": t, "status": "pending"} for t in tasks])
+
+
+def _plan_complete(task_id: int) -> str:
+    """Legacy: Use todo_write with updated status instead."""
+    for task in _todo_items:
+        if task["id"] == task_id:
+            task["status"] = "completed"
+            logger.info(f"[TodoWrite] Task #{task_id} completed: {task['content']}")
+            return f"✓ Task #{task_id} done: {task['content']}"
+    return f"Task #{task_id} not found"
+
+
+def _plan_verify() -> str:
+    """Legacy: Check if all tasks complete."""
+    if not _todo_items:
+        return "No plan active."
+
+    pending = [t for t in _todo_items if t["status"] == "pending"]
+    completed = [t for t in _todo_items if t["status"] == "completed"]
+
+    if pending:
+        pending_list = "\n".join(f"  - {t['content']}" for t in pending)
+        logger.warning(f"[TodoWrite] INCOMPLETE - {len(pending)} pending:\n{pending_list}")
+        return f"⚠️ INCOMPLETE: {len(pending)} task(s) still pending:\n{pending_list}"
+    else:
+        logger.info(f"[Internal] All {len(completed)} tasks completed")
+        # Clear the plan after successful verification
+        _internal_plan.clear()
+        return f"✓ All {len(completed)} task(s) completed successfully."
+
+
+def get_internal_plan() -> list[dict]:
+    """Get current internal plan (for UI/debugging)."""
+    return _internal_plan.copy()
 
 
 def _todo_add(task: str, priority: str = "normal") -> str:
@@ -304,6 +408,57 @@ def get_session_todos() -> list[dict]:
 
 # Tier 1: Core tools - always useful, minimal overhead
 CORE_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "iris_discover",
+            "description": """Discover what capabilities you have. Call when unsure how to handle a request.
+- No params: list all capabilities
+- category: get details for one capability (reminders, search, tasks, memory)
+- query: find capability by keyword (e.g., "remind", "weather", "remember")""",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "description": "Get details for this capability (reminders, search, tasks, memory)",
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "Search capabilities by keyword (e.g., 'remind', 'weather')",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "todo_write",
+            "description": """Track your tasks for multi-part requests. CALL THIS FIRST when user asks for 2+ things.
+Pass the complete task list - updates replace previous list.
+Mark tasks in_progress as you work, completed when done.""",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "todos": {
+                        "type": "array",
+                        "description": "List of tasks to track",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "content": {"type": "string", "description": "Task description"},
+                                "status": {"type": "string", "enum": ["pending", "in_progress", "completed"]},
+                            },
+                            "required": ["content", "status"],
+                        },
+                    }
+                },
+                "required": ["todos"],
+            },
+        },
+    },
     {
         "type": "function",
         "function": {
@@ -733,6 +888,125 @@ def _memory_summary() -> str:
 
 
 # ==============================================================================
+# Tool Discovery (iris_discover)
+# ==============================================================================
+
+# Detailed capability documentation for discovery
+CAPABILITY_DOCS = {
+    "reminders": {
+        "summary": "Persistent task reminders via Todoist",
+        "keywords": ["remind", "reminder", "later", "tomorrow", "deadline", "due", "schedule", "todo"],
+        "actions": {
+            "create": "Create a new reminder. Params: content (required), due (optional - 'today', 'tomorrow', 'next week')",
+            "list": "List all reminders. Params: filter (optional)",
+            "done": "Complete a reminder. Params: task_content (search by text)",
+        },
+        "examples": [
+            "iris(reminders, create, {content: 'check fuel', due: 'tomorrow'})",
+            "iris(reminders, list, {})",
+            "iris(reminders, done, {task_content: 'check fuel'})",
+        ],
+    },
+    "search": {
+        "summary": "Web search for current information",
+        "keywords": ["search", "find", "look up", "what is", "news", "weather", "price", "how to"],
+        "actions": {
+            "query": "Search the web. Params: query (required), count (optional, default 3)",
+        },
+        "examples": [
+            "iris(search, query, {query: 'Bitcoin price today'})",
+            "iris(search, query, {query: 'Star Atlas news', count: 5})",
+        ],
+    },
+    "tasks": {
+        "summary": "Session-scoped task tracking (not persistent)",
+        "keywords": ["task", "track", "list", "todo", "session"],
+        "actions": {
+            "add": "Add a task. Params: task (required), priority (optional: 'normal' or 'high')",
+            "complete": "Mark task done. Params: task_id (required)",
+            "list": "List all session tasks.",
+        },
+        "examples": [
+            "iris(tasks, add, {task: 'research Star Atlas'})",
+            "iris(tasks, list, {})",
+        ],
+    },
+    "memory": {
+        "summary": "Persistent knowledge graph for facts about user/entities",
+        "keywords": ["remember", "recall", "know", "forget", "memory", "fact", "about me"],
+        "actions": {
+            "remember": "Store facts. Params: entity (name), facts (list of strings)",
+            "recall": "Search memories. Params: query",
+            "forget": "Delete entity. Params: entity",
+            "relate": "Create relationship. Params: from, relation, to",
+            "summary": "Overview of all memories.",
+        },
+        "examples": [
+            "iris(memory, remember, {entity: 'User', facts: ['likes mining ships']})",
+            "iris(memory, recall, {query: 'user preferences'})",
+        ],
+    },
+}
+
+
+def _iris_discover(category: str = None, query: str = None) -> str:
+    """
+    Discover available IRIS capabilities.
+
+    If no category given, lists all categories.
+    If category given, shows detailed info for that category.
+    If query given, searches for matching capabilities by keyword.
+    """
+    logger.info(f"[IRIS Discover] category={category}, query={query}")
+
+    # Search by keyword
+    if query:
+        query_lower = query.lower()
+        matches = []
+        for cat_name, cat_info in CAPABILITY_DOCS.items():
+            # Check keywords
+            for keyword in cat_info["keywords"]:
+                if keyword in query_lower or query_lower in keyword:
+                    matches.append((cat_name, cat_info["summary"]))
+                    break
+            # Check summary
+            if cat_name not in [m[0] for m in matches]:
+                if query_lower in cat_info["summary"].lower():
+                    matches.append((cat_name, cat_info["summary"]))
+
+        if matches:
+            lines = [f"Found {len(matches)} matching capability(s):"]
+            for cat, summary in matches:
+                lines.append(f"- {cat}: {summary}")
+            lines.append(f"\nUse: iris({matches[0][0]}, <action>, {{params}})")
+            return "\n".join(lines)
+        else:
+            return f"No capabilities matching '{query}'. Available: reminders, search, tasks, memory"
+
+    # List all categories
+    if not category:
+        lines = ["IRIS Capabilities:"]
+        for cat_name, cat_info in CAPABILITY_DOCS.items():
+            keywords = ", ".join(cat_info["keywords"][:3])
+            lines.append(f"- {cat_name}: {cat_info['summary']} (triggers: {keywords})")
+        lines.append("\nCall iris_discover(category='X') for details on a specific capability.")
+        return "\n".join(lines)
+
+    # Show specific category
+    if category in CAPABILITY_DOCS:
+        cat = CAPABILITY_DOCS[category]
+        lines = [f"=== {category.upper()} ===", cat["summary"], "", "Actions:"]
+        for action, desc in cat["actions"].items():
+            lines.append(f"  {action}: {desc}")
+        lines.append("\nExamples:")
+        for ex in cat["examples"]:
+            lines.append(f"  {ex}")
+        return "\n".join(lines)
+
+    return f"Unknown category: {category}. Available: {', '.join(CAPABILITY_DOCS.keys())}"
+
+
+# ==============================================================================
 # Meta-Tool Router (iris)
 # ==============================================================================
 
@@ -747,8 +1021,24 @@ def _iris_router(category: str, action: str, params: dict = None) -> str:
 
     logger.info(f"[IRIS] Routing: {category}/{action} with {params}")
 
+    # Internal category (IRIS's own task planning)
+    if category == "internal":
+        if action == "plan":
+            tasks = params.get("tasks", [])
+            if isinstance(tasks, str):
+                tasks = [tasks]
+            return _plan_tasks(tasks)
+        elif action == "complete":
+            task_id = params.get("task_id", params.get("id", 0))
+            if isinstance(task_id, str):
+                task_id = int(task_id) if task_id.isdigit() else 0
+            return _plan_complete(task_id=task_id)
+        elif action == "verify":
+            return _plan_verify()
+        return f"Unknown internal action: {action}. Use: plan, complete, verify"
+
     # Search category
-    if category == "search":
+    elif category == "search":
         if action == "query" or action == "search":
             return _web_search(
                 query=params.get("query", ""),
@@ -829,6 +1119,8 @@ def _iris_router(category: str, action: str, params: dict = None) -> str:
 # Map tool names to functions (core tools + meta-tool router)
 TOOL_FUNCTIONS = {
     # Tier 1: Core tools (always inline)
+    "iris_discover": _iris_discover,
+    "todo_write": _todo_write,
     "get_current_time": _get_current_time,
     "calculate": _calculate,
     # Tier 2: Meta-tool router
